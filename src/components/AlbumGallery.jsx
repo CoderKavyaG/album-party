@@ -29,12 +29,13 @@ function calculateGridDimensions(totalAlbums) {
 }
 
 export default function AlbumGallery() {
-  const { albums, loading, error, authenticated } = useSpotifyAlbums()
+  const { albums, user, loading, error, authenticated } = useSpotifyAlbums()
   const [seed, setSeed] = useState(0)
   const [density, setDensity] = useState(16)
   const [currentPage, setCurrentPage] = useState('home') // 'home' or 'library'
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'collage'
   const [gridSize, setGridSize] = useState(4) // 3, 4, 5, 6, etc.
+  const [backgroundColor, setBackgroundColor] = useState('#0a0a0a') // Grid background color
   const collageRef = useRef(null)
   
   // Calculate optimal grid dimensions based on available albums
@@ -62,8 +63,8 @@ export default function AlbumGallery() {
     canvas.width = imageSize
     canvas.height = imageSize
     const ctx = canvas.getContext('2d')
-    // background black
-    ctx.fillStyle = '#0a0a0a'
+    // background with custom color
+    ctx.fillStyle = backgroundColor
     ctx.fillRect(0,0,canvas.width,canvas.height)
 
     for (let i=0;i<cols*rows;i++){
@@ -82,6 +83,23 @@ export default function AlbumGallery() {
         const sy = (nh - cell) / 2 / ratio
         ctx.drawImage(img, sx, sy, img.width - sx*2, img.height - sy*2, x, y, cell, cell)
       }catch(e){ console.warn('grid image load failed', e) }
+    }
+
+    // Add watermark with username
+    if (user?.display_name) {
+      const padding = 40
+      const fontSize = 32
+      ctx.font = `600 ${fontSize}px Inter, sans-serif`
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
+      ctx.textAlign = 'right'
+      ctx.textBaseline = 'bottom'
+      ctx.fillText(`@${user.display_name}`, imageSize - padding, imageSize - padding)
+      
+      // Add subtle shadow for better readability
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
+      ctx.shadowBlur = 10
+      ctx.shadowOffsetX = 2
+      ctx.shadowOffsetY = 2
     }
 
     const data = canvas.toDataURL('image/png')
@@ -283,6 +301,21 @@ export default function AlbumGallery() {
               </div>
             )}
 
+            {/* Background Color Picker */}
+            {viewMode === 'grid' && (
+              <div className="control-group">
+                <label htmlFor="bgColor" className="muted" style={{padding: '0 0.5rem'}}>Background:</label>
+                <input 
+                  type="color" 
+                  id="bgColor"
+                  value={backgroundColor} 
+                  onChange={(e) => setBackgroundColor(e.target.value)}
+                  className="color-picker"
+                />
+                <button onClick={() => setBackgroundColor('#0a0a0a')} className="btn btn-secondary" style={{fontSize: '0.75rem'}}>Reset</button>
+              </div>
+            )}
+
             {/* Download Button */}
             <div className="control-group">
               <button onClick={async () => {
@@ -325,7 +358,7 @@ export default function AlbumGallery() {
           {/* Main Display Section */}
           <section className="flex justify-center mb-12">
             {viewMode === 'grid' ? (
-              <div className={`album-grid album-grid-${gridSize}x${gridSize}`} style={{gridTemplateColumns: `repeat(${gridSize}, 1fr)`}}>
+              <div className={`album-grid album-grid-${gridSize}x${gridSize}`} style={{gridTemplateColumns: `repeat(${gridSize}, 1fr)`, background: backgroundColor}}>
                 {albums.slice(0, gridSize * gridSize).map(alb => (
                   <img key={alb.id} src={alb.images?.[0]?.url} alt={alb.name} className="album-tile" />
                 ))}

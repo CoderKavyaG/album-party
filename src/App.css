@@ -863,6 +863,21 @@ body {
   color: #000;
 }
 
+.color-picker {
+  width: 50px;
+  height: 38px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.color-picker:hover {
+  border-color: rgba(29,185,84,0.3);
+  transform: scale(1.05);
+}
+
 /* Small utility */
 .muted { color: var(--text-secondary); }
 

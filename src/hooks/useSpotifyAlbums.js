@@ -3,6 +3,7 @@ import { getAccessToken, clearTokens } from '../utils/spotifyAuth'
 
 export default function useSpotifyAlbums() {
   const [albums, setAlbums] = useState([])
+  const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [authenticated, setAuthenticated] = useState(false)
@@ -101,6 +102,24 @@ export default function useSpotifyAlbums() {
         }
         
         setAlbums(allAlbums)
+        
+        // Fetch user profile
+        const userToken = localStorage.getItem('spotify_access_token')
+        if (userToken) {
+          try {
+            const userRes = await fetch('https://api.spotify.com/v1/me', {
+              headers: { Authorization: `Bearer ${userToken}` },
+              signal: controller.signal,
+            })
+            if (userRes.ok) {
+              const userData = await userRes.json()
+              setUser(userData)
+            }
+          } catch (err) {
+            console.error('Failed to fetch user profile', err)
+          }
+        }
+        
         setAuthenticated(true)
         setLoading(false)
       } catch (err) {
@@ -116,5 +135,5 @@ export default function useSpotifyAlbums() {
     return () => controller.abort()
   }, [])
 
-  return { albums, loading, error, authenticated }
+  return { albums, user, loading, error, authenticated }
 }
