@@ -9,16 +9,24 @@ export default function AlbumGallery() {
   const [seed, setSeed] = useState(1)
   const [density, setDensity] = useState(12)
   const [selectionCount, setSelectionCount] = useState(16)
+  const [layoutMode, setLayoutMode] = useState('grid') // 'grid' | 'collage'
   const collageRef = useRef(null)
 
   // keep images memo for potential grid rendering
   const images = useMemo(() => albums.map((a) => a.images?.[0]?.url).filter(Boolean), [albums])
 
-  // helper to create a grid PNG (4x4) and trigger download
+  // compute grid dimensions in N x (N-1) style, minimally covering count
+  function getGridDims(count) {
+    if (count === 16) return { cols: 4, rows: 4 }
+    let n = 3
+    while (n * (n - 1) < count) n++
+    return { cols: n, rows: n - 1 }
+  }
+
+  // helper to create a grid PNG and trigger download
   async function downloadGrid(selection = []) {
     const size = 2400 // final image size
-    const cols = 4
-    const rows = 4
+    const { cols, rows } = getGridDims(selection.length || selectionCount)
     const cell = Math.floor(size / cols)
 
     const loadImage = (src) => new Promise((res, rej) => {
@@ -58,7 +66,7 @@ export default function AlbumGallery() {
     const data = canvas.toDataURL('image/png')
     const a = document.createElement('a')
     a.href = data
-    a.download = `album-party-grid-16.png`
+    a.download = `album-party-grid-${cols}x${rows}.png`
     document.body.appendChild(a)
     a.click()
     a.remove()
@@ -125,18 +133,22 @@ export default function AlbumGallery() {
 
             <div className="flex items-center gap-2">
               <label className="text-sm muted">Select:</label>
-              <button onClick={() => setSelectionCount(8)} className={`px-3 py-2 rounded ${selectionCount===8?'bg-spotify-accent text-white':'bg-gray-800 text-gray-200'}`}>Top 8</button>
-              <button onClick={() => setSelectionCount(16)} className={`px-3 py-2 rounded ${selectionCount===16?'bg-spotify-accent text-white':'bg-gray-800 text-gray-200'}`}>Top 16</button>
-              <button onClick={() => setSelectionCount(Infinity)} className={`px-3 py-2 rounded ${selectionCount===Infinity?'bg-spotify-accent text-white':'bg-gray-800 text-gray-200'}`}>All</button>
+              <button onClick={() => { setSelectionCount(8); setLayoutMode('grid') }} className={`px-3 py-2 rounded ${selectionCount===8?'bg-spotify-accent text-white':'bg-gray-800 text-gray-200'}`}>Top 8</button>
+              <button onClick={() => { setSelectionCount(16); setLayoutMode('grid') }} className={`px-3 py-2 rounded ${selectionCount===16?'bg-spotify-accent text-white':'bg-gray-800 text-gray-200'}`}>Top 16</button>
+              <button onClick={() => { setSelectionCount(Infinity); setLayoutMode('collage') }} className={`px-3 py-2 rounded ${selectionCount===Infinity?'bg-spotify-accent text-white':'bg-gray-800 text-gray-200'}`}>All</button>
             </div>
 
             <div className="flex items-center gap-2">
+              <label className="text-sm muted">Layout:</label>
+              <button onClick={() => setLayoutMode('grid')} className={`px-3 py-2 rounded ${layoutMode==='grid'?'bg-spotify-accent text-white':'bg-gray-800 text-gray-200'}`}>Grid</button>
+              <button onClick={() => setLayoutMode('collage')} className={`px-3 py-2 rounded ${layoutMode==='collage'?'bg-spotify-accent text-white':'bg-gray-800 text-gray-200'}`}>Collage</button>
               <button onClick={() => location.reload()} className="bg-spotify-accent hover:brightness-95 text-white py-2 px-4 rounded spotify-accent">Regenerate</button>
               <button onClick={() => logout()} className="ml-2 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">Sign out</button>
               <button onClick={async () => {
                 try {
-                  if (selectionCount === 16) {
-                    await downloadGrid(albums.slice(0,16))
+                  if (layoutMode === 'grid') {
+                    const chosen = selectionCount===Infinity?albums:albums.slice(0, selectionCount)
+                    await downloadGrid(chosen)
                     return
                   }
                   const data = collageRef.current?.toDataURL(3)
@@ -159,12 +171,21 @@ export default function AlbumGallery() {
           <div className="frame-wrap">
             <div className="frame-panel glass-panel">
               <div className="frame-inner">
-                {selectionCount === 16 ? (
-                  <div className="album-grid" style={{margin:0}}>
-                    {albums.slice(0,16).map(alb => (
-                      <img key={alb.id} src={alb.images?.[0]?.url} alt={alb.name} className="album-tile" />
-                    ))}
-                  </div>
+                {layoutMode === 'grid' ? (
+                  (() => {
+                    const chosen = selectionCount===Infinity?albums:albums.slice(0, selectionCount)
+                    const dims = selectionCount===16?{cols:4,rows:4}:getGridDims(chosen.length)
+                    const style = { margin:0, display:'grid', gridTemplateColumns:`repeat(${dims.cols}, 1fr)` }
+                    const slots = dims.cols * dims.rows
+                    return (
+                      <div className="album-grid" style={style}>
+                        {Array.from({length: slots}).map((_,i)=>{
+                          const alb = chosen[i]
+                          return alb ? <img key={alb.id} src={alb.images?.[0]?.url} alt={alb.name} className="album-tile"/> : <div key={`empty-${i}`} />
+                        })}
+                      </div>
+                    )
+                  })()
                 ) : (
                   <Collage ref={collageRef} albums={selectionCount === Infinity ? albums : albums.slice(0, selectionCount)} size={720} density={density} seed={seed} />
                 )}
