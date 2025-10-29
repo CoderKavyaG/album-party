@@ -39,3 +39,15 @@ export function clearTokens() {
   localStorage.removeItem('spotify_access_token')
   localStorage.removeItem('spotify_expires_at')
 }
+
+export async function logout() {
+  try {
+    // call server to clear HttpOnly refresh cookie
+    await fetch('/api/logout')
+  } catch (err) {
+    console.error('Logout request failed', err)
+  }
+  clearTokens()
+  // reload so UI resets
+  if (typeof window !== 'undefined') window.location.href = window.location.origin
+}
