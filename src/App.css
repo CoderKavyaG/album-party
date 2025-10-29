@@ -16,7 +16,9 @@ html, body, #root {
 }
 
 body {
-  background: linear-gradient(160deg, #041712 0%, #03110d 35%, #030908 100%);
+  background: radial-gradient(circle at 10% 8%, rgba(16,185,129,0.06), transparent 8%),
+              radial-gradient(circle at 88% 92%, rgba(30,64,175,0.03), transparent 12%),
+              linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 60%);
   color: #E6EEF3;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
@@ -51,19 +53,6 @@ body {
 .site-hero h1{ font-size: 2.25rem; letter-spacing: -0.02em; }
 .site-hero p{ color: rgba(230,238,243,0.72); }
 
-/* Album grid (used for Top-16 preview) */
-.album-grid {
-  width: 720px;
-  max-width: 92vw;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  background: #0b0b0b;
-  padding: 6px;
-  border-radius: 6px;
-  box-shadow: 0 20px 40px rgba(2,6,23,0.6);
-}
-
 /* framed art area */
 .frame-wrap{ display:flex; align-items:center; justify-content:center; gap:20px; }
 .frame-panel{
@@ -78,6 +67,19 @@ body {
   display:flex; align-items:center; justify-content:center;
 }
 .frame-inner{ width:100%; height:100%; background:#060606; border-radius:6px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+
+/* album grid (Top 16 preview) */
+.album-grid {
+  width: 720px;
+  max-width: 92vw;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  background: #0b0b0b;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 20px 40px rgba(2,6,23,0.6);
+}
 
 /* side download column */
 .side-export{ width:84px; display:flex; flex-direction:column; gap:12px; align-items:center; }
@@ -94,9 +96,19 @@ body {
   aspect-ratio: 1/1;
   object-fit: cover;
   display: block;
-  border-radius: 2px;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.6);
-  border: 2px solid rgba(0,0,0,0.4);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+  border: 2px solid rgba(255,255,255,0.02);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.album-tile:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 18px 48px rgba(2,6,23,0.7);
+}
+
+/* Responsive tweak: smaller grid on narrow screens */
+@media (max-width:720px){
+  .album-grid{ grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Small utility */
@@ -109,63 +121,3 @@ body {
 @media (max-width:720px){
   .album-grid{ grid-template-columns: repeat(3, 1fr); }
 }
-
-/* App backdrop and vinyl illustration */
-.app-bg {
-  position: relative;
-  background: linear-gradient(180deg, #041712 0%, #02130e 40%, #000907 100%);
-}
-.app-bg::after {
-  content: "";
-  position: absolute;
-  left: -22vw;
-  bottom: -22vw;
-  width: 80vw;
-  height: 80vw;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0 35%, rgba(0,0,0,0.4) 36% 37%, rgba(0,0,0,0) 38%),
-    radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0 50%, rgba(0,0,0,0.45) 51% 52%, rgba(0,0,0,0) 53%),
-    radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0 65%, rgba(0,0,0,0.4) 66% 67%, rgba(0,0,0,0) 68%),
-    radial-gradient(circle at 50% 50%, rgba(18,58,43,0.6) 0, rgba(5,20,15,0.8) 60%, rgba(0,0,0,0.9) 100%);
-  box-shadow: inset 0 0 120px rgba(8,28,22,0.7);
-  filter: blur(1px);
-  pointer-events: none;
-}
-
-/* Brand in top-left */
-.brand-badge {
-  position: absolute;
-  top: 18px;
-  left: 20px;
-  font-family: Montserrat, Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  font-weight: 800;
-  letter-spacing: .3px;
-  color: #E8F7F0;
-}
-
-/* Top navigation */
-.topnav { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(8px); background: rgba(3,17,13,0.35); border-bottom: 1px solid rgba(255,255,255,0.04) }
-.topnav-inner { max-width: 1120px; margin: 0 auto; display:flex; align-items:center; justify-content:space-between; padding: 14px 18px }
-.nav-brand { font-family: Montserrat, Inter, system-ui; font-weight: 800; letter-spacing: .2px }
-.nav-actions { display:flex; align-items:center; gap:10px }
-.nav-btn { display:inline-flex; align-items:center; gap:8px; padding:.55rem .9rem; border-radius:999px; background: rgba(255,255,255,0.06); color:#E8F7F0; border:1px solid rgba(255,255,255,0.08); transition: background .15s ease, transform .15s ease }
-.nav-btn:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px) }
-
-/* Landing hero */
-.hero-wrap { min-height: calc(100vh - 80px); display:flex; align-items:center; justify-content:center; text-align:center; padding: 6rem 1.25rem 4rem }
-.hero-title { font-family: "Playfair Display", Georgia, serif; font-weight: 700; font-size: clamp(34px, 6.4vw, 60px); letter-spacing: -0.02em }
-.hero-title em { font-style: italic; color: #9AE6B4 }
-.hero-sub { max-width: 60ch; margin: 14px auto 22px; color: rgba(230,238,243,0.82); font-size: clamp(14px, 2.4vw, 18px) }
-.spotify-cta { display:inline-flex; align-items:center; gap:10px; padding:.9rem 1.2rem; border-radius:999px; background:#1db954; color:#06150e; font-weight:800; box-shadow: 0 14px 36px rgba(29,185,84,0.22), 0 2px 0 rgba(0,0,0,0.35) inset; transition: transform .15s ease, filter .15s ease }
-.spotify-cta:hover { filter: brightness(1.08); transform: translateY(-1px) }
-.hero-divider { width: 260px; max-width: 70vw; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.18), rgba(255,255,255,0)); margin: 18px auto 0 }
-
-/* Glass card for hero */
-.glass-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 30px 80px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.06); border-radius: 16px; padding: 32px 26px }
-.gradient-text { background: linear-gradient(90deg, #ffffff, #a7f3d0 60%, #86efac); -webkit-background-clip: text; background-clip: text; color: transparent }
-
-/* Authenticated hero */
-.collection-hero { text-align:center; padding: 56px 16px 24px }
-.collection-title { font-family: "Playfair Display", Georgia, serif; font-weight: 700; font-size: clamp(28px, 4.6vw, 44px); letter-spacing: -0.01em }
-.collection-sub { color: rgba(230,238,243,0.78); max-width: 70ch; margin: 10px auto 0 }

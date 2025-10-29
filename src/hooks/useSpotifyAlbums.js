@@ -8,33 +8,44 @@ export default function useSpotifyAlbums() {
   const [authenticated, setAuthenticated] = useState(false)
 
   useEffect(() => {
+    // Ask the serverless refresh endpoint for an access token (it uses an HttpOnly cookie)
+    async function init() {
+      setLoading(true)
+      try {
+        // ensure cookies are sent so the server can read the HttpOnly refresh token
+        const r = await fetch('/api/refresh', { credentials: 'include' })
+        if (!r.ok) {
+          setAuthenticated(false)
+          setLoading(false)
+          return
+        }
+        const j = await r.json()
+        const token = j.access_token
+        if (!token) {
+          setAuthenticated(false)
+          setLoading(false)
+          return
+        }
+        // store in localStorage for API calls; access token is short-lived
+        localStorage.setItem('spotify_access_token', token)
+        localStorage.setItem('spotify_expires_at', String(Date.now() + (j.expires_in || 3600) * 1000))
+        setAuthenticated(true)
+        setLoading(false)
+      } catch (err) {
+        console.error('Init refresh failed', err)
+        setAuthenticated(false)
+        setLoading(false)
+      }
+    }
+
+    init()
+
     const controller = new AbortController()
 
-    // Step 1: Ask the serverless refresh endpoint for an access token (it uses an HttpOnly cookie)
-    async function initAndFetch() {
+    async function fetchAlbums() {
       setLoading(true)
       setError(null)
       try {
-        // Refresh or retrieve an access token first
-        try {
-          const r = await fetch('/api/refresh')
-          if (r.ok) {
-            const j = await r.json()
-            const token = j.access_token
-            if (token) {
-              localStorage.setItem('spotify_access_token', token)
-              localStorage.setItem('spotify_expires_at', String(Date.now() + (j.expires_in || 3600) * 1000))
-              setAuthenticated(true)
-            }
-          } else {
-            setAuthenticated(false)
-          }
-        } catch (e) {
-          // Ignore and fall back to any existing token
-          setAuthenticated(false)
-        }
-
-        // Step 2: Use whichever token we now have to fetch albums
         // Read the current access token (may have been set by init() above)
         const token = getAccessToken() || localStorage.getItem('spotify_access_token')
         if (!token) {
@@ -49,10 +60,10 @@ export default function useSpotifyAlbums() {
           signal: controller.signal,
         })
 
-        if (res.status === 401) {
-          // Try to refresh via the server once
+        if (res.status === 401 || res.status === 403) {
+          // Try to refresh via the server once (send credentials so the refresh cookie is included)
           try {
-            const r2 = await fetch('/api/refresh')
+            const r2 = await fetch('/api/refresh', { credentials: 'include' })
             if (r2.ok) {
               const j2 = await r2.json()
               const newToken = j2.access_token
@@ -64,7 +75,11 @@ export default function useSpotifyAlbums() {
                   headers: { Authorization: `Bearer ${newToken}` },
                   signal: controller.signal,
                 })
-                if (!retry.ok) throw new Error(`Spotify API error ${retry.status}`)
+                if (!retry.ok) {
+                  // log details for debugging
+                  try { const bad = await retry.json(); console.error('Spotify retry error', retry.status, bad) } catch(_){}
+                  throw new Error(`Spotify API error ${retry.status}`)
+                }
                 const json2 = await retry.json()
                 setAlbums(json2.items.map((it) => it.album))
                 setLoading(false)
@@ -96,7 +111,7 @@ export default function useSpotifyAlbums() {
       }
     }
 
-    initAndFetch()
+    fetchAlbums()
 
     return () => controller.abort()
   }, [])

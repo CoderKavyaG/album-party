@@ -43,7 +43,7 @@ export function clearTokens() {
 export async function logout() {
   try {
     // call server to clear HttpOnly refresh cookie
-    await fetch('/api/logout')
+    await fetch('/api/logout', { credentials: 'include' })
   } catch (err) {
     console.error('Logout request failed', err)
   }
