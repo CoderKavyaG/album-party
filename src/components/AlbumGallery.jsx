@@ -47,10 +47,17 @@ export default function AlbumGallery() {
 
   // helper to create a grid PNG and trigger download
   async function downloadGrid(selection = [], size = gridSize) {
-    const imageSize = 2400 // final image size
     const cols = size
     const rows = size
-    const cell = Math.floor(imageSize / cols)
+    const padding = 80 // Padding around the grid (matches 40px CSS scaled up)
+    const gap = 32 // Gap between albums (matches 16px CSS scaled up)
+    
+    // Calculate cell size based on available space after padding and gaps
+    const availableSpace = 2400 - (padding * 2) - (gap * (cols - 1))
+    const cell = Math.floor(availableSpace / cols)
+    
+    // Calculate actual canvas size needed
+    const imageSize = (padding * 2) + (cell * cols) + (gap * (cols - 1))
 
     const loadImage = (src) => new Promise((res, rej) => {
       const img = new Image()
@@ -73,8 +80,10 @@ export default function AlbumGallery() {
       if (!imgUrl) continue
       try{
         const img = await loadImage(imgUrl)
-        const x = (i % cols) * cell
-        const y = Math.floor(i / cols) * cell
+        const col = i % cols
+        const row = Math.floor(i / cols)
+        const x = padding + (col * cell) + (col * gap)
+        const y = padding + (row * cell) + (row * gap)
         
         // Draw with rounded corners
         const radius = cell * 0.08 // 8% radius for rounded corners
