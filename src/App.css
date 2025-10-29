@@ -760,12 +760,18 @@ body {
 }
 
 .btn-danger {
-  background: #dc2626;
-  color: white;
+  background: rgba(220,38,38,0.1);
+  color: #ef4444;
+  border: 1px solid rgba(220,38,38,0.3);
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
 .btn-danger:hover {
-  background: #b91c1c;
+  background: rgba(220,38,38,0.2);
+  border-color: rgba(220,38,38,0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220,38,38,0.2);
 }
 
 .btn-active {
