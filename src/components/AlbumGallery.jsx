@@ -30,9 +30,11 @@ function calculateGridDimensions(totalAlbums) {
 
 export default function AlbumGallery() {
   const { albums, loading, error, authenticated } = useSpotifyAlbums()
-  const [showGrid, setShowGrid] = useState(false)
-  const [seed, setSeed] = useState(1)
-  const [density, setDensity] = useState(12)
+  const [seed, setSeed] = useState(0)
+  const [density, setDensity] = useState(16)
+  const [showAllDetails, setShowAllDetails] = useState(false)
+  const [viewMode, setViewMode] = useState('grid') // 'grid' or 'collage'
+  const [gridSize, setGridSize] = useState(4) // 3, 4, 5, 6, etc.
   const collageRef = useRef(null)
   
   // Calculate optimal grid dimensions based on available albums
@@ -41,12 +43,12 @@ export default function AlbumGallery() {
   // keep images memo for potential grid rendering
   const images = useMemo(() => albums.map((a) => a.images?.[0]?.url).filter(Boolean), [albums])
 
-  // helper to create a grid PNG (4x4) and trigger download
-  async function downloadGrid(selection = []) {
-    const size = 2400 // final image size
-    const cols = 4
-    const rows = 4
-    const cell = Math.floor(size / cols)
+  // helper to create a grid PNG and trigger download
+  async function downloadGrid(selection = [], size = gridSize) {
+    const imageSize = 2400 // final image size
+    const cols = size
+    const rows = size
+    const cell = Math.floor(imageSize / cols)
 
     const loadImage = (src) => new Promise((res, rej) => {
       const img = new Image()
@@ -57,11 +59,11 @@ export default function AlbumGallery() {
     })
 
     const canvas = document.createElement('canvas')
-    canvas.width = size
-    canvas.height = size
+    canvas.width = imageSize
+    canvas.height = imageSize
     const ctx = canvas.getContext('2d')
     // background black
-    ctx.fillStyle = '#050505'
+    ctx.fillStyle = '#0a0a0a'
     ctx.fillRect(0,0,canvas.width,canvas.height)
 
     for (let i=0;i<cols*rows;i++){
@@ -85,7 +87,7 @@ export default function AlbumGallery() {
     const data = canvas.toDataURL('image/png')
     const a = document.createElement('a')
     a.href = data
-    a.download = `album-party-grid-16.png`
+    a.download = `album-party-${cols}x${rows}-grid.png`
     document.body.appendChild(a)
     a.click()
     a.remove()
@@ -241,6 +243,39 @@ export default function AlbumGallery() {
           </header>
 
           <div className="controls-section">
+            {/* View Mode Toggle */}
+            <div className="control-group">
+              <button 
+                onClick={() => setViewMode('grid')} 
+                className={`btn ${viewMode === 'grid' ? 'btn-active' : 'btn-secondary'}`}
+              >
+                Grid View
+              </button>
+              <button 
+                onClick={() => setViewMode('collage')} 
+                className={`btn ${viewMode === 'collage' ? 'btn-active' : 'btn-secondary'}`}
+              >
+                CD Collage
+              </button>
+            </div>
+
+            {/* Grid Size Control */}
+            {viewMode === 'grid' && (
+              <div className="control-group">
+                <button onClick={() => setGridSize(s => Math.max(3, s - 1))} className="btn btn-secondary">-</button>
+                <span className="muted" style={{padding: '0 0.5rem'}}>{gridSize}×{gridSize} grid</span>
+                <button onClick={() => setGridSize(s => Math.min(10, s + 1))} className="btn btn-secondary">+</button>
+              </div>
+            )}
+
+            {/* Download Button */}
+            <div className="control-group">
+              <button onClick={async () => {
+                const albumsToUse = albums.slice(0, gridSize * gridSize)
+                await downloadGrid(albumsToUse, gridSize)
+              }} className="btn btn-primary">Download Image</button>
+            </div>
+
             <div className="control-group">
               <button onClick={() => setSeed(Math.floor(Math.random() * 100000))} className="btn btn-primary">
                 Generate Collage
@@ -272,24 +307,35 @@ export default function AlbumGallery() {
             </div>
           </div>
 
+          {/* Main Display Section */}
           <section className="flex justify-center mb-12">
-            <div className={`album-grid ${gridClass}`}>
-              {albums.slice(0, count).map(alb => (
-                <img key={alb.id} src={alb.images?.[0]?.url} alt={alb.name} className="album-tile" />
-              ))}
-            </div>
+            {viewMode === 'grid' ? (
+              <div className={`album-grid album-grid-${gridSize}x${gridSize}`} style={{gridTemplateColumns: `repeat(${gridSize}, 1fr)`}}>
+                {albums.slice(0, gridSize * gridSize).map(alb => (
+                  <img key={alb.id} src={alb.images?.[0]?.url} alt={alb.name} className="album-tile" />
+                ))}
+              </div>
+            ) : (
+              <div className="cd-collage-container">
+                {albums.slice(0, Math.min(20, albums.length)).map(alb => (
+                  <div key={alb.id} className="cd-album">
+                    <img src={alb.images?.[0]?.url} alt={alb.name} />
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="text-center mb-8">
             <button 
-              onClick={() => setShowGrid(!showGrid)} 
+              onClick={() => setShowAllDetails(!showAllDetails)} 
               className="btn btn-secondary"
             >
-              {showGrid ? 'Hide' : 'Show'} All Album Details
+              {showAllDetails ? 'Hide' : 'Show'} All Album Details
             </button>
           </section>
 
-          {showGrid && (
+          {showAllDetails && (
             <section className="mb-8">
               <h4 className="text-xl font-semibold mb-4">All Saved Albums</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
