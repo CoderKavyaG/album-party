@@ -49,11 +49,14 @@ export default function AlbumGallery() {
   async function downloadGrid(selection = [], size = gridSize) {
     const cols = size
     const rows = size
-    const padding = 80 // Padding around the grid (matches 40px CSS scaled up)
-    const gap = 32 // Gap between albums (matches 16px CSS scaled up)
+    
+    // Dynamic base size: smaller grids get higher resolution per tile
+    const baseSize = size <= 4 ? 3200 : size <= 6 ? 2800 : 2400
+    const padding = 80
+    const gap = 32
     
     // Calculate cell size based on available space after padding and gaps
-    const availableSpace = 2400 - (padding * 2) - (gap * (cols - 1))
+    const availableSpace = baseSize - (padding * 2) - (gap * (cols - 1))
     const cell = Math.floor(availableSpace / cols)
     
     // Calculate actual canvas size needed
@@ -141,6 +144,107 @@ export default function AlbumGallery() {
     document.body.appendChild(a)
     a.click()
     a.remove()
+  }
+
+  // Helper to create CD collage download
+  async function downloadCDCollage(selection = []) {
+    const canvasSize = 2000
+    const cdSize = 350
+    const padding = 60
+    const maxCDs = Math.min(20, selection.length)
+    
+    const loadImage = (src) => new Promise((res, rej) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => res(img)
+      img.onerror = rej
+      img.src = src
+    })
+
+    const canvas = document.createElement('canvas')
+    canvas.width = canvasSize
+    canvas.height = canvasSize
+    const ctx = canvas.getContext('2d')
+    
+    // Background
+    ctx.fillStyle = backgroundColor
+    ctx.fillRect(0, 0, canvasSize, canvasSize)
+
+    // Arrange CDs in a scattered pattern
+    const positions = []
+    const cols = 4
+    const rows = Math.ceil(maxCDs / cols)
+    
+    for (let i = 0; i < maxCDs; i++) {
+      const col = i % cols
+      const row = Math.floor(i / cols)
+      const baseX = padding + col * (cdSize * 0.8) + (canvasSize - padding * 2 - cols * cdSize * 0.8) / 2
+      const baseY = padding + row * (cdSize * 0.8) + (canvasSize - padding * 2 - rows * cdSize * 0.8) / 2
+      
+      // Add some randomness for natural look
+      const offsetX = (Math.random() - 0.5) * 40
+      const offsetY = (Math.random() - 0.5) * 40
+      
+      positions.push({ x: baseX + offsetX, y: baseY + offsetY })
+    }
+
+    // Draw CDs
+    for (let i = 0; i < maxCDs; i++) {
+      const imgUrl = selection[i]?.images?.[0]?.url
+      if (!imgUrl) continue
+      
+      try {
+        const img = await loadImage(imgUrl)
+        const pos = positions[i]
+        const radius = cdSize / 2
+        
+        ctx.save()
+        ctx.beginPath()
+        ctx.arc(pos.x + radius, pos.y + radius, radius, 0, Math.PI * 2)
+        ctx.closePath()
+        ctx.clip()
+        
+        // Draw album cover
+        ctx.drawImage(img, pos.x, pos.y, cdSize, cdSize)
+        ctx.restore()
+        
+        // Add CD center hole
+        ctx.save()
+        ctx.fillStyle = 'rgba(0,0,0,0.8)'
+        ctx.beginPath()
+        ctx.arc(pos.x + radius, pos.y + radius, 25, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
+        
+        // Add shine effect
+        ctx.save()
+        const gradient = ctx.createLinearGradient(pos.x, pos.y, pos.x + cdSize, pos.y + cdSize)
+        gradient.addColorStop(0, 'rgba(255,255,255,0.2)')
+        gradient.addColorStop(0.5, 'transparent')
+        gradient.addColorStop(1, 'rgba(0,0,0,0.3)')
+        ctx.fillStyle = gradient
+        ctx.beginPath()
+        ctx.arc(pos.x + radius, pos.y + radius, radius, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
+      } catch (e) {
+        console.warn('CD image load failed', e)
+      }
+    }
+
+    // Add watermark
+    if (user?.display_name) {
+      ctx.font = '600 32px Inter, sans-serif'
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
+      ctx.textAlign = 'right'
+      ctx.textBaseline = 'bottom'
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
+      ctx.shadowBlur = 10
+      ctx.fillText(`@${user.display_name}`, canvasSize - 40, canvasSize - 40)
+    }
+
+    const data = canvas.toDataURL('image/png')
+    return { data, filename: 'album-party-cd-collage.png' }
   }
 
   if (!authenticated) {
@@ -349,21 +453,33 @@ export default function AlbumGallery() {
 
             {/* Background Presets */}
             {viewMode === 'grid' && (
-              <div className="control-group">
+              <div className="control-group" style={{flexWrap: 'wrap', maxWidth: '400px'}}>
                 <button onClick={() => setBackgroundColor('#0a0a0a')} className="bg-preset" style={{background: '#0a0a0a'}} title="Black"></button>
                 <button onClick={() => setBackgroundColor('#1a1a2e')} className="bg-preset" style={{background: '#1a1a2e'}} title="Dark Blue"></button>
                 <button onClick={() => setBackgroundColor('#2d1b00')} className="bg-preset" style={{background: '#2d1b00'}} title="Dark Brown"></button>
                 <button onClick={() => setBackgroundColor('#1a0f0f')} className="bg-preset" style={{background: '#1a0f0f'}} title="Dark Red"></button>
                 <button onClick={() => setBackgroundColor('#0f1a0f')} className="bg-preset" style={{background: '#0f1a0f'}} title="Dark Green"></button>
                 <button onClick={() => setBackgroundColor('#1a0a1a')} className="bg-preset" style={{background: '#1a0a1a'}} title="Dark Purple"></button>
+                <button onClick={() => setBackgroundColor('#2c1810')} className="bg-preset" style={{background: '#2c1810'}} title="Chocolate"></button>
+                <button onClick={() => setBackgroundColor('#1a1a1a')} className="bg-preset" style={{background: '#1a1a1a'}} title="Charcoal"></button>
+                <button onClick={() => setBackgroundColor('#0d1b2a')} className="bg-preset" style={{background: '#0d1b2a'}} title="Navy"></button>
+                <button onClick={() => setBackgroundColor('#1b263b')} className="bg-preset" style={{background: '#1b263b'}} title="Midnight"></button>
+                <button onClick={() => setBackgroundColor('#2d132c')} className="bg-preset" style={{background: '#2d132c'}} title="Plum"></button>
+                <button onClick={() => setBackgroundColor('#1f1f1f')} className="bg-preset" style={{background: '#1f1f1f'}} title="Graphite"></button>
               </div>
             )}
 
             {/* Download Button */}
             <div className="control-group">
               <button onClick={async () => {
-                const albumsToUse = albums.slice(0, gridSize * gridSize)
-                const result = await downloadGrid(albumsToUse, gridSize)
+                let result
+                if (viewMode === 'grid') {
+                  const albumsToUse = albums.slice(0, gridSize * gridSize)
+                  result = await downloadGrid(albumsToUse, gridSize)
+                } else {
+                  const albumsToUse = albums.slice(0, Math.min(20, albums.length))
+                  result = await downloadCDCollage(albumsToUse)
+                }
                 if (result) {
                   setPreviewImage(result)
                 }
