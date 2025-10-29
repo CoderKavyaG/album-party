@@ -28,15 +28,31 @@ function calculateGridDimensions(totalAlbums) {
   return { rows: sqrtFloor, cols: sqrtFloor, count: sqrtFloor * sqrtFloor, type: 'square' }
 }
 
+// Vibe-based color themes
+const VIBES = {
+  party: { name: '🎉 Party', color: '#ff006e' },
+  chill: { name: '😌 Chill', color: '#0d1b2a' },
+  romantic: { name: '💕 Romantic', color: '#2d132c' },
+  energetic: { name: '⚡ Energetic', color: '#ff9500' },
+  dark: { name: '🌑 Dark', color: '#0a0a0a' },
+  sunset: { name: '🌅 Sunset', color: '#2d1b00' },
+  ocean: { name: '🌊 Ocean', color: '#1a1a2e' },
+  forest: { name: '🌲 Forest', color: '#0f1a0f' },
+  midnight: { name: '🌙 Midnight', color: '#1b263b' },
+  retro: { name: '📼 Retro', color: '#2c1810' }
+}
+
 export default function AlbumGallery() {
   const { albums, user, loading, error, authenticated } = useSpotifyAlbums()
   const [seed, setSeed] = useState(0)
   const [density, setDensity] = useState(16)
   const [currentPage, setCurrentPage] = useState('home') // 'home' or 'library'
-  const [viewMode, setViewMode] = useState('grid') // 'grid' or 'collage'
+  const [viewMode, setViewMode] = useState('collage') // 'grid' or 'collage' - default to collage
   const [gridSize, setGridSize] = useState(4) // 3, 4, 5, 6, etc.
+  const [cdCount, setCdCount] = useState(12) // Number of CDs to display in collage
   const [backgroundColor, setBackgroundColor] = useState('#0a0a0a') // Grid background color
   const [previewImage, setPreviewImage] = useState(null) // Preview before download
+  const [selectedAlbum, setSelectedAlbum] = useState(null) // For track list modal
   const collageRef = useRef(null)
   
   // Calculate optimal grid dimensions based on available albums
@@ -147,11 +163,11 @@ export default function AlbumGallery() {
   }
 
   // Helper to create CD collage download
-  async function downloadCDCollage(selection = []) {
+  async function downloadCDCollage(selection = [], count = cdCount) {
     const canvasSize = 2000
     const cdSize = 350
     const padding = 60
-    const maxCDs = Math.min(20, selection.length)
+    const maxCDs = Math.min(count, selection.length)
     
     const loadImage = (src) => new Promise((res, rej) => {
       const img = new Image()
@@ -437,37 +453,30 @@ export default function AlbumGallery() {
               </div>
             )}
 
-            {/* Background Color Picker */}
-            {viewMode === 'grid' && (
+            {/* CD Count Control */}
+            {viewMode === 'collage' && (
               <div className="control-group">
-                <label htmlFor="bgColor" className="muted" style={{padding: '0 0.5rem'}}>Background:</label>
-                <input 
-                  type="color" 
-                  id="bgColor"
-                  value={backgroundColor} 
-                  onChange={(e) => setBackgroundColor(e.target.value)}
-                  className="color-picker"
-                />
+                <button onClick={() => setCdCount(c => Math.max(6, c - 2))} className="btn btn-secondary">-</button>
+                <span className="muted" style={{padding: '0 0.5rem'}}>{cdCount} CDs</span>
+                <button onClick={() => setCdCount(c => Math.min(30, c + 2))} className="btn btn-secondary">+</button>
               </div>
             )}
 
-            {/* Background Presets */}
-            {viewMode === 'grid' && (
-              <div className="control-group" style={{flexWrap: 'wrap', maxWidth: '400px'}}>
-                <button onClick={() => setBackgroundColor('#0a0a0a')} className="bg-preset" style={{background: '#0a0a0a'}} title="Black"></button>
-                <button onClick={() => setBackgroundColor('#1a1a2e')} className="bg-preset" style={{background: '#1a1a2e'}} title="Dark Blue"></button>
-                <button onClick={() => setBackgroundColor('#2d1b00')} className="bg-preset" style={{background: '#2d1b00'}} title="Dark Brown"></button>
-                <button onClick={() => setBackgroundColor('#1a0f0f')} className="bg-preset" style={{background: '#1a0f0f'}} title="Dark Red"></button>
-                <button onClick={() => setBackgroundColor('#0f1a0f')} className="bg-preset" style={{background: '#0f1a0f'}} title="Dark Green"></button>
-                <button onClick={() => setBackgroundColor('#1a0a1a')} className="bg-preset" style={{background: '#1a0a1a'}} title="Dark Purple"></button>
-                <button onClick={() => setBackgroundColor('#2c1810')} className="bg-preset" style={{background: '#2c1810'}} title="Chocolate"></button>
-                <button onClick={() => setBackgroundColor('#1a1a1a')} className="bg-preset" style={{background: '#1a1a1a'}} title="Charcoal"></button>
-                <button onClick={() => setBackgroundColor('#0d1b2a')} className="bg-preset" style={{background: '#0d1b2a'}} title="Navy"></button>
-                <button onClick={() => setBackgroundColor('#1b263b')} className="bg-preset" style={{background: '#1b263b'}} title="Midnight"></button>
-                <button onClick={() => setBackgroundColor('#2d132c')} className="bg-preset" style={{background: '#2d132c'}} title="Plum"></button>
-                <button onClick={() => setBackgroundColor('#1f1f1f')} className="bg-preset" style={{background: '#1f1f1f'}} title="Graphite"></button>
-              </div>
-            )}
+            {/* Vibe Themes */}
+            <div className="control-group" style={{flexWrap: 'wrap', maxWidth: '500px'}}>
+              <span className="muted" style={{padding: '0 0.5rem', width: '100%', textAlign: 'center', marginBottom: '0.5rem'}}>Choose Vibe:</span>
+              {Object.entries(VIBES).map(([key, vibe]) => (
+                <button 
+                  key={key}
+                  onClick={() => setBackgroundColor(vibe.color)} 
+                  className="vibe-btn" 
+                  style={{background: vibe.color}}
+                  title={vibe.name}
+                >
+                  {vibe.name}
+                </button>
+              ))}
+            </div>
 
             {/* Download Button */}
             <div className="control-group">
@@ -477,43 +486,13 @@ export default function AlbumGallery() {
                   const albumsToUse = albums.slice(0, gridSize * gridSize)
                   result = await downloadGrid(albumsToUse, gridSize)
                 } else {
-                  const albumsToUse = albums.slice(0, Math.min(20, albums.length))
-                  result = await downloadCDCollage(albumsToUse)
+                  const albumsToUse = albums.slice(0, Math.min(cdCount, albums.length))
+                  result = await downloadCDCollage(albumsToUse, cdCount)
                 }
                 if (result) {
                   setPreviewImage(result)
                 }
               }} className="btn btn-primary">Preview & Download</button>
-            </div>
-
-            <div className="control-group">
-              <button onClick={() => setSeed(Math.floor(Math.random() * 100000))} className="btn btn-primary">
-                Generate Collage
-              </button>
-              <button onClick={() => setDensity(d => Math.max(6, d - 2))} className="btn btn-secondary">-</button>
-              <span className="muted" style={{padding: '0 0.5rem'}}>{density} tiles</span>
-              <button onClick={() => setDensity(d => Math.min(32, d + 2))} className="btn btn-secondary">+</button>
-            </div>
-
-            <div className="control-group">
-              <button onClick={() => location.reload()} className="btn btn-primary">Regenerate</button>
-            </div>
-
-            <div className="control-group">
-              <button onClick={async () => {
-                try {
-                  const data = collageRef.current?.toDataURL(3)
-                  if (!data) return
-                  const a = document.createElement('a')
-                  a.href = data
-                  a.download = `album-party-${count}.png`
-                  document.body.appendChild(a)
-                  a.click()
-                  a.remove()
-                } catch (e) {
-                  console.error('download failed', e)
-                }
-              }} className="btn btn-primary">Download</button>
             </div>
           </div>
 
@@ -526,8 +505,8 @@ export default function AlbumGallery() {
                 ))}
               </div>
             ) : (
-              <div className="cd-collage-container">
-                {albums.slice(0, Math.min(20, albums.length)).map(alb => (
+              <div className="cd-collage-container" style={{background: backgroundColor}}>
+                {albums.slice(0, Math.min(cdCount, albums.length)).map(alb => (
                   <div key={alb.id} className="cd-album">
                     <img src={alb.images?.[0]?.url} alt={alb.name} />
                   </div>
@@ -545,7 +524,7 @@ export default function AlbumGallery() {
 
             <div className="library-grid">
               {albums.map((album) => (
-                <div key={album.id} className="library-card">
+                <div key={album.id} className="library-card" onClick={() => setSelectedAlbum(album)}>
                   <div className="library-card-image">
                     <img src={album.images?.[0]?.url} alt={album.name} />
                   </div>
@@ -586,6 +565,45 @@ export default function AlbumGallery() {
               </button>
               <button onClick={() => setPreviewImage(null)} className="btn btn-secondary">
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Track List Modal */}
+      {selectedAlbum && (
+        <div className="preview-modal" onClick={() => setSelectedAlbum(null)}>
+          <div className="preview-content track-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="preview-close" onClick={() => setSelectedAlbum(null)}>✕</button>
+            <div className="track-modal-header">
+              <img src={selectedAlbum.images?.[0]?.url} alt={selectedAlbum.name} className="track-modal-cover" />
+              <div>
+                <h2 className="preview-title">{selectedAlbum.name}</h2>
+                <p className="track-modal-artist">{selectedAlbum.artists?.map(a => a.name).join(', ')}</p>
+                <p className="track-modal-meta">{selectedAlbum.total_tracks} tracks • {new Date(selectedAlbum.release_date).getFullYear()}</p>
+              </div>
+            </div>
+            <div className="track-list">
+              {selectedAlbum.tracks?.items?.map((track, idx) => (
+                <div key={track.id} className="track-item">
+                  <span className="track-number">{idx + 1}</span>
+                  <span className="track-name">{track.name}</span>
+                  <span className="track-duration">{Math.floor(track.duration_ms / 60000)}:{String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')}</span>
+                </div>
+              ))}
+            </div>
+            <div className="preview-actions">
+              <a 
+                href={selectedAlbum.external_urls?.spotify} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="btn btn-primary"
+              >
+                Open in Spotify
+              </a>
+              <button onClick={() => setSelectedAlbum(null)} className="btn btn-secondary">
+                Close
               </button>
             </div>
           </div>

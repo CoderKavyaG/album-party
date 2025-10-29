@@ -928,6 +928,106 @@ body {
   transform: scale(0.95);
 }
 
+.vibe-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.vibe-btn:hover {
+  border-color: var(--spotify-green);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(29,185,84,0.3);
+}
+
+.vibe-btn:active {
+  transform: translateY(0);
+}
+
+/* Track Modal */
+.track-modal {
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.track-modal-header {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-start;
+}
+
+.track-modal-cover {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.track-modal-artist {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin: 0.5rem 0;
+}
+
+.track-modal-meta {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.track-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 1.5rem;
+  background: rgba(0,0,0,0.3);
+  border-radius: 12px;
+  padding: 0.5rem;
+}
+
+.track-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.track-item:hover {
+  background: rgba(29,185,84,0.1);
+}
+
+.track-number {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  min-width: 30px;
+}
+
+.track-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.track-duration {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
 /* Small utility */
 .muted { color: var(--text-secondary); }
 
