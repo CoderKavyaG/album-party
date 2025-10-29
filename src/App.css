@@ -726,7 +726,7 @@ body {
   aspect-ratio: 1/1;
   object-fit: cover;
   display: block;
-  border-radius: 12px;
+  border-radius: 20px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.6);
   border: none;
   transition: transform 200ms ease, box-shadow 200ms ease;
@@ -876,6 +876,26 @@ body {
 .color-picker:hover {
   border-color: rgba(29,185,84,0.3);
   transform: scale(1.05);
+}
+
+.bg-preset {
+  width: 40px;
+  height: 38px;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.bg-preset:hover {
+  border-color: var(--spotify-green);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(29,185,84,0.3);
+}
+
+.bg-preset:active {
+  transform: scale(0.95);
 }
 
 /* Small utility */

@@ -74,14 +74,31 @@ export default function AlbumGallery() {
         const img = await loadImage(imgUrl)
         const x = (i % cols) * cell
         const y = Math.floor(i / cols) * cell
+        
+        // Draw with rounded corners
+        const radius = cell * 0.08 // 8% radius for rounded corners
+        ctx.save()
+        ctx.beginPath()
+        ctx.moveTo(x + radius, y)
+        ctx.lineTo(x + cell - radius, y)
+        ctx.quadraticCurveTo(x + cell, y, x + cell, y + radius)
+        ctx.lineTo(x + cell, y + cell - radius)
+        ctx.quadraticCurveTo(x + cell, y + cell, x + cell - radius, y + cell)
+        ctx.lineTo(x + radius, y + cell)
+        ctx.quadraticCurveTo(x, y + cell, x, y + cell - radius)
+        ctx.lineTo(x, y + radius)
+        ctx.quadraticCurveTo(x, y, x + radius, y)
+        ctx.closePath()
+        ctx.clip()
+        
         // draw cover filling the cell with cover centered and cropped
-        // compute aspect-fit crop
         const ratio = Math.max(cell / img.width, cell / img.height)
         const nw = img.width * ratio
         const nh = img.height * ratio
         const sx = (nw - cell) / 2 / ratio
         const sy = (nh - cell) / 2 / ratio
         ctx.drawImage(img, sx, sy, img.width - sx*2, img.height - sy*2, x, y, cell, cell)
+        ctx.restore()
       }catch(e){ console.warn('grid image load failed', e) }
     }
 
@@ -312,7 +329,18 @@ export default function AlbumGallery() {
                   onChange={(e) => setBackgroundColor(e.target.value)}
                   className="color-picker"
                 />
-                <button onClick={() => setBackgroundColor('#0a0a0a')} className="btn btn-secondary" style={{fontSize: '0.75rem'}}>Reset</button>
+              </div>
+            )}
+
+            {/* Background Presets */}
+            {viewMode === 'grid' && (
+              <div className="control-group">
+                <button onClick={() => setBackgroundColor('#0a0a0a')} className="bg-preset" style={{background: '#0a0a0a'}} title="Black"></button>
+                <button onClick={() => setBackgroundColor('#1a1a2e')} className="bg-preset" style={{background: '#1a1a2e'}} title="Dark Blue"></button>
+                <button onClick={() => setBackgroundColor('#2d1b00')} className="bg-preset" style={{background: '#2d1b00'}} title="Dark Brown"></button>
+                <button onClick={() => setBackgroundColor('#1a0f0f')} className="bg-preset" style={{background: '#1a0f0f'}} title="Dark Red"></button>
+                <button onClick={() => setBackgroundColor('#0f1a0f')} className="bg-preset" style={{background: '#0f1a0f'}} title="Dark Green"></button>
+                <button onClick={() => setBackgroundColor('#1a0a1a')} className="bg-preset" style={{background: '#1a0a1a'}} title="Dark Purple"></button>
               </div>
             )}
 
