@@ -439,9 +439,9 @@ export default function AlbumGallery() {
         {currentPage === 'home' ? (
           <div className="max-w-6xl mx-auto px-6">
             <header className="page-header">
-              <h1 className="page-title">Your Sound Journey</h1>
+              <h1 className="page-title">Create Your Album Art Party</h1>
               <p className="page-subtitle">
-                {count} albums arranged in a {rows}×{cols} {gridDimensions.type === 'square' ? 'square' : 'rectangle'} grid
+                Design stunning album grids and share with your friends
               </p>
             </header>
 
@@ -505,16 +505,27 @@ export default function AlbumGallery() {
             {/* Download Button */}
             <div className="control-group">
               <button onClick={async () => {
-                let result
-                if (viewMode === 'grid') {
-                  const albumsToUse = albums.slice(0, gridSize * gridSize)
-                  result = await downloadGrid(albumsToUse, gridSize)
-                } else {
-                  const albumsToUse = albums.slice(0, Math.min(cdCount, albums.length))
-                  result = await downloadCDCollage(albumsToUse, cdCount)
-                }
-                if (result) {
-                  setPreviewImage(result)
+                try {
+                  console.log('Download button clicked, viewMode:', viewMode)
+                  let result
+                  if (viewMode === 'grid') {
+                    const albumsToUse = albums.slice(0, gridSize * gridSize)
+                    console.log('Generating grid with', albumsToUse.length, 'albums')
+                    result = await downloadGrid(albumsToUse, gridSize)
+                  } else {
+                    const albumsToUse = albums.slice(0, Math.min(cdCount, albums.length))
+                    console.log('Generating CD collage with', albumsToUse.length, 'albums')
+                    result = await downloadCDCollage(albumsToUse, cdCount)
+                  }
+                  console.log('Result:', result ? 'Success' : 'Failed')
+                  if (result) {
+                    setPreviewImage(result)
+                  } else {
+                    alert('Failed to generate preview. Please try again.')
+                  }
+                } catch (error) {
+                  console.error('Download error:', error)
+                  alert('Error generating image: ' + error.message)
                 }
               }} className="btn btn-primary">Preview & Download</button>
             </div>
