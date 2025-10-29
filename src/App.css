@@ -1,0 +1,6 @@
+/* Small app-specific overrides. Tailwind utilities live in src/index.css */
+
+/* Ensure the body background inherits correctly when previewing */
+html, body, #root {
+  height: 100%;
+}

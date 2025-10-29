@@ -1,0 +1,6 @@
+{
+  "name": "album-party-server-removed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "This server was removed — the project now uses a frontend-only Spotify auth flow."
+}
