@@ -5,7 +5,8 @@ export default function AlbumGallery() {
   const { albums, loading, error, authenticated } = useSpotifyAlbums()
 
   if (!authenticated) {
-    // client-side implicit flow (simple) — using VITE_SPOTIFY_CLIENT_ID set in env
+    // client-side implicit flow (simple) — prefer env var but fall back to the
+    // public client id you provided so the deployed site works immediately.
     const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID || ''
     const redirect = window.location.origin + window.location.pathname
     const scope = 'user-library-read'

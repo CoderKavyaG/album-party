@@ -1,6 +1,7 @@
 import React from 'react'
 import AlbumGallery from './components/AlbumGallery'
 import './App.css'
+import DebugInfo from './components/DebugInfo'
 
 export default function App() {
 	return (
@@ -12,6 +13,7 @@ export default function App() {
 			<main>
 				<AlbumGallery />
 			</main>
+			<DebugInfo />
 		</div>
 	)
 }
