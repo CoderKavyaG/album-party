@@ -45,13 +45,48 @@ export default function useSpotifyAlbums() {
       setLoading(true)
       setError(null)
       try {
+        // Read the current access token (may have been set by init() above)
+        const token = getAccessToken() || localStorage.getItem('spotify_access_token')
+        if (!token) {
+          // No token available — user needs to sign in
+          setAuthenticated(false)
+          setLoading(false)
+          return
+        }
+
         const res = await fetch('https://api.spotify.com/v1/me/albums?limit=50', {
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
         })
 
         if (res.status === 401) {
-          // no server refresh available in frontend-only mode
+          // Try to refresh via the server once
+          try {
+            const r2 = await fetch('/api/refresh')
+            if (r2.ok) {
+              const j2 = await r2.json()
+              const newToken = j2.access_token
+              if (newToken) {
+                localStorage.setItem('spotify_access_token', newToken)
+                localStorage.setItem('spotify_expires_at', String(Date.now() + (j2.expires_in || 3600) * 1000))
+                // retry the albums request with the new token
+                const retry = await fetch('https://api.spotify.com/v1/me/albums?limit=50', {
+                  headers: { Authorization: `Bearer ${newToken}` },
+                  signal: controller.signal,
+                })
+                if (!retry.ok) throw new Error(`Spotify API error ${retry.status}`)
+                const json2 = await retry.json()
+                setAlbums(json2.items.map((it) => it.album))
+                setLoading(false)
+                setAuthenticated(true)
+                return
+              }
+            }
+          } catch (err) {
+            console.error('Refresh attempt failed', err)
+          }
+
+          // If we get here, refresh failed or wasn't available
           clearTokens()
           setAuthenticated(false)
           setLoading(false)
