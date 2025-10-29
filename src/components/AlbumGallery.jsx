@@ -60,17 +60,15 @@ export default function AlbumGallery() {
     const cols = size
     const rows = size
     
-    // Dynamic base size: smaller grids get higher resolution per tile
-    const baseSize = size <= 4 ? 3200 : size <= 6 ? 2800 : 2400
-    const padding = 80
-    const gap = 32
+    // Calculate optimal cell size for quality
+    const cellSize = size <= 4 ? 600 : size <= 6 ? 450 : 350
+    const padding = 60
+    const gap = 20
     
-    // Calculate cell size based on available space after padding and gaps
-    const availableSpace = baseSize - (padding * 2) - (gap * (cols - 1))
-    const cell = Math.floor(availableSpace / cols)
-    
-    // Calculate actual canvas size needed
-    const imageSize = (padding * 2) + (cell * cols) + (gap * (cols - 1))
+    // Calculate canvas size to fit content exactly
+    const imageWidth = (padding * 2) + (cellSize * cols) + (gap * (cols - 1))
+    const imageHeight = (padding * 2) + (cellSize * rows) + (gap * (rows - 1))
+    const cell = cellSize
 
     const loadImage = (src) => new Promise((res, rej) => {
       const img = new Image()
@@ -81,12 +79,12 @@ export default function AlbumGallery() {
     })
 
     const canvas = document.createElement('canvas')
-    canvas.width = imageSize
-    canvas.height = imageSize
+    canvas.width = imageWidth
+    canvas.height = imageHeight
     const ctx = canvas.getContext('2d')
     // background with custom color
     ctx.fillStyle = backgroundColor
-    ctx.fillRect(0,0,canvas.width,canvas.height)
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     for (let i=0;i<cols*rows;i++){
       const imgUrl = selection[i]?.images?.[0]?.url
@@ -127,19 +125,17 @@ export default function AlbumGallery() {
 
     // Add watermark with username
     if (user?.display_name) {
-      const padding = 40
-      const fontSize = 32
+      const watermarkPadding = 30
+      const fontSize = 28
       ctx.font = `600 ${fontSize}px Inter, sans-serif`
       ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
       ctx.textAlign = 'right'
       ctx.textBaseline = 'bottom'
-      ctx.fillText(`@${user.display_name}`, imageSize - padding, imageSize - padding)
-      
-      // Add subtle shadow for better readability
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
       ctx.shadowBlur = 10
       ctx.shadowOffsetX = 2
       ctx.shadowOffsetY = 2
+      ctx.fillText(`@${user.display_name}`, imageWidth - watermarkPadding, imageHeight - watermarkPadding)
     }
 
     const data = canvas.toDataURL('image/png')
@@ -158,10 +154,19 @@ export default function AlbumGallery() {
 
   // Helper to create CD collage download
   async function downloadCDCollage(selection = [], count = cdCount) {
-    const canvasSize = 2000
-    const cdSize = 280
-    const padding = 100
     const maxCDs = Math.min(count, selection.length)
+    const cols = Math.ceil(Math.sqrt(maxCDs))
+    const rows = Math.ceil(maxCDs / cols)
+    
+    // Bigger CDs with less overlap
+    const cdSize = 400
+    const overlapFactor = 0.65 // More overlap for tighter layout
+    const padding = 80
+    
+    // Calculate canvas size based on content
+    const totalWidth = cols * cdSize * overlapFactor + cdSize * (1 - overlapFactor) + padding * 2
+    const totalHeight = rows * cdSize * overlapFactor + cdSize * (1 - overlapFactor) + padding * 2
+    const canvasSize = Math.max(totalWidth, totalHeight)
     
     const loadImage = (src) => new Promise((res, rej) => {
       const img = new Image()
@@ -180,22 +185,16 @@ export default function AlbumGallery() {
     ctx.fillStyle = backgroundColor
     ctx.fillRect(0, 0, canvasSize, canvasSize)
 
-    // Arrange CDs in overlapping grid pattern (matching display)
+    // Arrange CDs in overlapping grid pattern
     const positions = []
-    const cols = Math.ceil(Math.sqrt(maxCDs))
-    const rows = Math.ceil(maxCDs / cols)
-    const overlapFactor = 0.7 // CDs overlap by 30%
-    
-    const totalWidth = cols * cdSize * overlapFactor + cdSize * (1 - overlapFactor)
-    const totalHeight = rows * cdSize * overlapFactor + cdSize * (1 - overlapFactor)
-    const startX = (canvasSize - totalWidth) / 2
-    const startY = (canvasSize - totalHeight) / 2
+    const startX = (canvasSize - totalWidth + padding * 2) / 2
+    const startY = (canvasSize - totalHeight + padding * 2) / 2
     
     for (let i = 0; i < maxCDs; i++) {
       const col = i % cols
       const row = Math.floor(i / cols)
-      const x = startX + col * (cdSize * overlapFactor)
-      const y = startY + row * (cdSize * overlapFactor)
+      const x = startX + padding + col * (cdSize * overlapFactor)
+      const y = startY + padding + row * (cdSize * overlapFactor)
       
       positions.push({ x, y })
     }
