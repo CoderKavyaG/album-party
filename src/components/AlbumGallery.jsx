@@ -30,16 +30,10 @@ function calculateGridDimensions(totalAlbums) {
 
 // Vibe-based color themes
 const VIBES = {
-  party: { name: '🎉 Party', color: '#ff006e' },
-  chill: { name: '😌 Chill', color: '#0d1b2a' },
-  romantic: { name: '💕 Romantic', color: '#2d132c' },
-  energetic: { name: '⚡ Energetic', color: '#ff9500' },
-  dark: { name: '🌑 Dark', color: '#0a0a0a' },
-  sunset: { name: '🌅 Sunset', color: '#2d1b00' },
-  ocean: { name: '🌊 Ocean', color: '#1a1a2e' },
-  forest: { name: '🌲 Forest', color: '#0f1a0f' },
-  midnight: { name: '🌙 Midnight', color: '#1b263b' },
-  retro: { name: '📼 Retro', color: '#2c1810' }
+  dark: { name: 'Dark', color: '#0a0a0a' },
+  midnight: { name: 'Midnight', color: '#1b263b' },
+  sunset: { name: 'Sunset', color: '#2d1b00' },
+  forest: { name: 'Forest', color: '#0f1a0f' }
 }
 
 export default function AlbumGallery() {
@@ -165,8 +159,8 @@ export default function AlbumGallery() {
   // Helper to create CD collage download
   async function downloadCDCollage(selection = [], count = cdCount) {
     const canvasSize = 2000
-    const cdSize = 350
-    const padding = 60
+    const cdSize = 280
+    const padding = 100
     const maxCDs = Math.min(count, selection.length)
     
     const loadImage = (src) => new Promise((res, rej) => {
@@ -186,22 +180,24 @@ export default function AlbumGallery() {
     ctx.fillStyle = backgroundColor
     ctx.fillRect(0, 0, canvasSize, canvasSize)
 
-    // Arrange CDs in a scattered pattern
+    // Arrange CDs in overlapping grid pattern (matching display)
     const positions = []
-    const cols = 4
+    const cols = Math.ceil(Math.sqrt(maxCDs))
     const rows = Math.ceil(maxCDs / cols)
+    const overlapFactor = 0.7 // CDs overlap by 30%
+    
+    const totalWidth = cols * cdSize * overlapFactor + cdSize * (1 - overlapFactor)
+    const totalHeight = rows * cdSize * overlapFactor + cdSize * (1 - overlapFactor)
+    const startX = (canvasSize - totalWidth) / 2
+    const startY = (canvasSize - totalHeight) / 2
     
     for (let i = 0; i < maxCDs; i++) {
       const col = i % cols
       const row = Math.floor(i / cols)
-      const baseX = padding + col * (cdSize * 0.8) + (canvasSize - padding * 2 - cols * cdSize * 0.8) / 2
-      const baseY = padding + row * (cdSize * 0.8) + (canvasSize - padding * 2 - rows * cdSize * 0.8) / 2
+      const x = startX + col * (cdSize * overlapFactor)
+      const y = startY + row * (cdSize * overlapFactor)
       
-      // Add some randomness for natural look
-      const offsetX = (Math.random() - 0.5) * 40
-      const offsetY = (Math.random() - 0.5) * 40
-      
-      positions.push({ x: baseX + offsetX, y: baseY + offsetY })
+      positions.push({ x, y })
     }
 
     // Draw CDs
@@ -214,19 +210,40 @@ export default function AlbumGallery() {
         const pos = positions[i]
         const radius = cdSize / 2
         
+        // Draw shadow
+        ctx.save()
+        ctx.shadowColor = 'rgba(0,0,0,0.5)'
+        ctx.shadowBlur = 20
+        ctx.shadowOffsetX = 0
+        ctx.shadowOffsetY = 10
+        ctx.beginPath()
+        ctx.arc(pos.x + radius, pos.y + radius, radius, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
+        
+        // Draw album cover (circular)
         ctx.save()
         ctx.beginPath()
         ctx.arc(pos.x + radius, pos.y + radius, radius, 0, Math.PI * 2)
         ctx.closePath()
         ctx.clip()
-        
-        // Draw album cover
         ctx.drawImage(img, pos.x, pos.y, cdSize, cdSize)
+        ctx.restore()
+        
+        // Draw border
+        ctx.save()
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)'
+        ctx.lineWidth = 3
+        ctx.beginPath()
+        ctx.arc(pos.x + radius, pos.y + radius, radius, 0, Math.PI * 2)
+        ctx.stroke()
         ctx.restore()
         
         // Add CD center hole
         ctx.save()
-        ctx.fillStyle = 'rgba(0,0,0,0.8)'
+        ctx.fillStyle = 'rgba(0,0,0,0.9)'
+        ctx.shadowColor = 'rgba(0,0,0,0.8)'
+        ctx.shadowBlur = 10
         ctx.beginPath()
         ctx.arc(pos.x + radius, pos.y + radius, 25, 0, Math.PI * 2)
         ctx.fill()
@@ -235,9 +252,10 @@ export default function AlbumGallery() {
         // Add shine effect
         ctx.save()
         const gradient = ctx.createLinearGradient(pos.x, pos.y, pos.x + cdSize, pos.y + cdSize)
-        gradient.addColorStop(0, 'rgba(255,255,255,0.2)')
+        gradient.addColorStop(0, 'rgba(255,255,255,0.15)')
         gradient.addColorStop(0.5, 'transparent')
-        gradient.addColorStop(1, 'rgba(0,0,0,0.3)')
+        gradient.addColorStop(1, 'rgba(0,0,0,0.2)')
+        ctx.globalCompositeOperation = 'overlay'
         ctx.fillStyle = gradient
         ctx.beginPath()
         ctx.arc(pos.x + radius, pos.y + radius, radius, 0, Math.PI * 2)
@@ -463,8 +481,7 @@ export default function AlbumGallery() {
             )}
 
             {/* Vibe Themes */}
-            <div className="control-group" style={{flexWrap: 'wrap', maxWidth: '500px'}}>
-              <span className="muted" style={{padding: '0 0.5rem', width: '100%', textAlign: 'center', marginBottom: '0.5rem'}}>Choose Vibe:</span>
+            <div className="control-group" style={{flexWrap: 'wrap', gap: '0.5rem'}}>
               {Object.entries(VIBES).map(([key, vibe]) => (
                 <button 
                   key={key}
@@ -476,6 +493,13 @@ export default function AlbumGallery() {
                   {vibe.name}
                 </button>
               ))}
+              <input 
+                type="color" 
+                value={backgroundColor} 
+                onChange={(e) => setBackgroundColor(e.target.value)}
+                className="color-picker"
+                title="Custom Color"
+              />
             </div>
 
             {/* Download Button */}
