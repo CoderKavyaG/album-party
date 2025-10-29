@@ -32,7 +32,7 @@ export default function AlbumGallery() {
   const { albums, loading, error, authenticated } = useSpotifyAlbums()
   const [seed, setSeed] = useState(0)
   const [density, setDensity] = useState(16)
-  const [showAllDetails, setShowAllDetails] = useState(false)
+  const [currentPage, setCurrentPage] = useState('home') // 'home' or 'library'
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'collage'
   const [gridSize, setGridSize] = useState(4) // 3, 4, 5, 6, etc.
   const collageRef = useRef(null)
@@ -230,17 +230,32 @@ export default function AlbumGallery() {
     <>
       <nav className="navbar">
         <div className="brand-name">Album Party</div>
+        <div className="nav-links">
+          <button 
+            onClick={() => setCurrentPage('home')} 
+            className={`nav-link ${currentPage === 'home' ? 'active' : ''}`}
+          >
+            Home
+          </button>
+          <button 
+            onClick={() => setCurrentPage('library')} 
+            className={`nav-link ${currentPage === 'library' ? 'active' : ''}`}
+          >
+            Library
+          </button>
+        </div>
         <button onClick={() => logout()} className="btn btn-danger">Sign Out</button>
       </nav>
       
       <div className="app-container">
-        <div className="max-w-6xl mx-auto px-6">
-          <header className="page-header">
-            <h1 className="page-title">Your Sound Journey</h1>
-            <p className="page-subtitle">
-              {count} albums arranged in a {rows}×{cols} {gridDimensions.type === 'square' ? 'square' : 'rectangle'} grid
-            </p>
-          </header>
+        {currentPage === 'home' ? (
+          <div className="max-w-6xl mx-auto px-6">
+            <header className="page-header">
+              <h1 className="page-title">Your Sound Journey</h1>
+              <p className="page-subtitle">
+                {count} albums arranged in a {rows}×{cols} {gridDimensions.type === 'square' ? 'square' : 'rectangle'} grid
+              </p>
+            </header>
 
           <div className="controls-section">
             {/* View Mode Toggle */}
@@ -325,33 +340,34 @@ export default function AlbumGallery() {
               </div>
             )}
           </section>
+          </div>
+        ) : (
+          <div className="library-page">
+            <header className="page-header">
+              <h1 className="page-title">Your Music Library</h1>
+              <p className="page-subtitle">{albums.length} albums in your collection</p>
+            </header>
 
-          <section className="text-center mb-8">
-            <button 
-              onClick={() => setShowAllDetails(!showAllDetails)} 
-              className="btn btn-secondary"
-            >
-              {showAllDetails ? 'Hide' : 'Show'} All Album Details
-            </button>
-          </section>
-
-          {showAllDetails && (
-            <section className="mb-8">
-              <h4 className="text-xl font-semibold mb-4">All Saved Albums</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {albums.map((album) => (
-                  <div key={album.id} className="bg-gray-900 rounded overflow-hidden shadow hover:scale-105 transform transition duration-200">
-                    <img src={album.images?.[0]?.url} alt={album.name} className="w-full h-36 object-cover" />
-                    <div className="p-3 text-xs text-gray-200">
-                      <div className="font-semibold truncate">{album.name}</div>
-                      <div className="text-gray-400 truncate">{album.artists?.map(a => a.name).join(', ')}</div>
+            <div className="library-grid">
+              {albums.map((album) => (
+                <div key={album.id} className="library-card">
+                  <div className="library-card-image">
+                    <img src={album.images?.[0]?.url} alt={album.name} />
+                  </div>
+                  <div className="library-card-content">
+                    <h3 className="library-card-title">{album.name}</h3>
+                    <p className="library-card-artist">{album.artists?.map(a => a.name).join(', ')}</p>
+                    <div className="library-card-meta">
+                      <span>{album.total_tracks} tracks</span>
+                      <span>•</span>
+                      <span>{new Date(album.release_date).getFullYear()}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   )
