@@ -36,6 +36,7 @@ export default function AlbumGallery() {
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'collage'
   const [gridSize, setGridSize] = useState(4) // 3, 4, 5, 6, etc.
   const [backgroundColor, setBackgroundColor] = useState('#0a0a0a') // Grid background color
+  const [previewImage, setPreviewImage] = useState(null) // Preview before download
   const collageRef = useRef(null)
   
   // Calculate optimal grid dimensions based on available albums
@@ -120,9 +121,14 @@ export default function AlbumGallery() {
     }
 
     const data = canvas.toDataURL('image/png')
+    return { data, filename: `album-party-${cols}x${rows}-grid.png` }
+  }
+
+  // Function to actually download the image
+  function triggerDownload(dataUrl, filename) {
     const a = document.createElement('a')
-    a.href = data
-    a.download = `album-party-${cols}x${rows}-grid.png`
+    a.href = dataUrl
+    a.download = filename
     document.body.appendChild(a)
     a.click()
     a.remove()
@@ -348,8 +354,11 @@ export default function AlbumGallery() {
             <div className="control-group">
               <button onClick={async () => {
                 const albumsToUse = albums.slice(0, gridSize * gridSize)
-                await downloadGrid(albumsToUse, gridSize)
-              }} className="btn btn-primary">Download Image</button>
+                const result = await downloadGrid(albumsToUse, gridSize)
+                if (result) {
+                  setPreviewImage(result)
+                }
+              }} className="btn btn-primary">Preview & Download</button>
             </div>
 
             <div className="control-group">
@@ -430,6 +439,33 @@ export default function AlbumGallery() {
           </div>
         )}
       </div>
+
+      {/* Preview Modal */}
+      {previewImage && (
+        <div className="preview-modal" onClick={() => setPreviewImage(null)}>
+          <div className="preview-content" onClick={(e) => e.stopPropagation()}>
+            <button className="preview-close" onClick={() => setPreviewImage(null)}>✕</button>
+            <h2 className="preview-title">Preview Your Grid</h2>
+            <div className="preview-image-container">
+              <img src={previewImage.data} alt="Preview" className="preview-image" />
+            </div>
+            <div className="preview-actions">
+              <button 
+                onClick={() => {
+                  triggerDownload(previewImage.data, previewImage.filename)
+                  setPreviewImage(null)
+                }} 
+                className="btn btn-primary"
+              >
+                Download Image
+              </button>
+              <button onClick={() => setPreviewImage(null)} className="btn btn-secondary">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
