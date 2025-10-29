@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { parseAuthFromUrl, getAccessToken, clearTokens } from '../utils/spotifyAuth'
+import { getAccessToken, clearTokens } from '../utils/spotifyAuth'
 
 export default function useSpotifyAlbums() {
   const [albums, setAlbums] = useState([])
@@ -8,15 +8,36 @@ export default function useSpotifyAlbums() {
   const [authenticated, setAuthenticated] = useState(false)
 
   useEffect(() => {
-    // read tokens if redirected from server
-    parseAuthFromUrl()
-    const token = getAccessToken()
-    if (!token) {
-      setAuthenticated(false)
-      setLoading(false)
-      return
+    // Ask the serverless refresh endpoint for an access token (it uses an HttpOnly cookie)
+    async function init() {
+      setLoading(true)
+      try {
+        const r = await fetch('/api/refresh')
+        if (!r.ok) {
+          setAuthenticated(false)
+          setLoading(false)
+          return
+        }
+        const j = await r.json()
+        const token = j.access_token
+        if (!token) {
+          setAuthenticated(false)
+          setLoading(false)
+          return
+        }
+        // store in localStorage for API calls; access token is short-lived
+        localStorage.setItem('spotify_access_token', token)
+        localStorage.setItem('spotify_expires_at', String(Date.now() + (j.expires_in || 3600) * 1000))
+        setAuthenticated(true)
+        setLoading(false)
+      } catch (err) {
+        console.error(err)
+        setAuthenticated(false)
+        setLoading(false)
+      }
     }
-    setAuthenticated(true)
+
+    init()
 
     const controller = new AbortController()
 

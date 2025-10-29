@@ -7,11 +7,13 @@ export default function AlbumGallery() {
   if (!authenticated) {
     // client-side implicit flow (simple) — prefer env var but fall back to the
     // public client id you provided so the deployed site works immediately.
-    const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID || ''
-    const redirect = window.location.origin + window.location.pathname
-    const scope = 'user-library-read'
-    const params = new URLSearchParams({ response_type: 'token', client_id: clientId, redirect_uri: redirect, scope })
-    const authorizeUrl = `https://accounts.spotify.com/authorize?${params.toString()}`
+  // Use server callback so we can obtain refresh tokens server-side
+  const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID || ''
+  const scope = 'user-library-read'
+  // Redirect to Spotify authorize page — callback is handled by our serverless /api/callback
+  const redirectUri = `${window.location.origin}/api/callback`
+  const params = new URLSearchParams({ response_type: 'code', client_id: clientId, redirect_uri: redirectUri, scope })
+  const authorizeUrl = `https://accounts.spotify.com/authorize?${params.toString()}`
 
     return (
       <div className="p-6 text-center">
