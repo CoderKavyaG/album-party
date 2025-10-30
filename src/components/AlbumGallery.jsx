@@ -59,24 +59,12 @@ export default function AlbumGallery() {
   const [backgroundColor, setBackgroundColor] = useState('#0a0a0a') // Grid background color
   const [previewImage, setPreviewImage] = useState(null) // Preview before download
   const [selectedAlbum, setSelectedAlbum] = useState(null) // For track list modal
-  const [hasAutoRefreshed, setHasAutoRefreshed] = useState(false) // Auto-refresh flag
   const collageRef = useRef(null)
   
   // Update grid size when albums change
   useEffect(() => {
     setGridSize(autoGridSize)
   }, [autoGridSize])
-  
-  // Auto-refresh once if no albums found (might be cache issue)
-  useEffect(() => {
-    if (!loading && !albums.length && !hasAutoRefreshed && authenticated) {
-      console.log('No albums found, auto-refreshing once...')
-      setHasAutoRefreshed(true)
-      setTimeout(() => {
-        window.location.reload()
-      }, 1000)
-    }
-  }, [loading, albums.length, hasAutoRefreshed, authenticated])
   
   // Calculate optimal grid dimensions based on available albums
   const gridDimensions = useMemo(() => calculateGridDimensions(albums.length), [albums.length])
@@ -621,9 +609,16 @@ export default function AlbumGallery() {
         </div>
       </nav>
       <div className="empty-state">
-        <div className="spinner"></div>
-        <h2>Refreshing your library...</h2>
-        <p>Please wait while we fetch your albums</p>
+        <h2>No Saved Albums Found</h2>
+        <p>Save some albums in your Spotify library to get started!</p>
+        <div style={{display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem'}}>
+          <button onClick={() => window.location.reload()} className="btn btn-primary">
+            Refresh
+          </button>
+          <a href="https://open.spotify.com" target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
+            Open Spotify
+          </a>
+        </div>
       </div>
     </>
   )

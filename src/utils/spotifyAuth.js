@@ -47,12 +47,19 @@ export async function logout() {
   } catch (err) {
     console.error('Logout request failed', err)
   }
+  
+  // Clear ALL storage
   clearTokens()
-  // Clear ALL localStorage to prevent cached data
   localStorage.clear()
-  // Force reload to show login screen
+  sessionStorage.clear()
+  
+  // Clear all cookies client-side too
+  document.cookie.split(";").forEach((c) => {
+    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+  })
+  
+  // Single redirect to home (no double reload)
   if (typeof window !== 'undefined') {
     window.location.href = window.location.origin
-    window.location.reload(true)
   }
 }
