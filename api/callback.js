@@ -67,6 +67,7 @@ export default async function handler(req, res) {
       }).end()
     }
 
+    console.log('Token exchange successful, scope:', data.scope)
     const refreshToken = data.refresh_token
     
     if (!refreshToken) {

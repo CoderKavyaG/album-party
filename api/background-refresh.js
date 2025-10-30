@@ -67,10 +67,20 @@ export default async function handler(req, res) {
       })
 
       if (!response.ok) {
+        const errorData = await response.text()
+        console.error(`Spotify API error: ${response.status}`, errorData)
+        
         if (response.status === 401) {
           return res.status(401).json({ error: 'Token expired or invalid' })
         }
-        throw new Error(`Spotify API error: ${response.status}`)
+        if (response.status === 403) {
+          return res.status(403).json({ 
+            error: 'Insufficient permissions', 
+            details: 'Make sure user-library-read scope is granted',
+            spotifyError: errorData
+          })
+        }
+        throw new Error(`Spotify API error: ${response.status} - ${errorData}`)
       }
 
       const data = await response.json()

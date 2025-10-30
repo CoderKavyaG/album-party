@@ -42,6 +42,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Refresh failed', details: data })
     }
 
+    console.log('Token refreshed successfully, scope:', data.scope)
     return res.json({ access_token: data.access_token, expires_in: data.expires_in })
   } catch (err) {
     console.error(err)
