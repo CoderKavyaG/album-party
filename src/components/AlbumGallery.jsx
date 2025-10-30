@@ -449,7 +449,7 @@ export default function AlbumGallery() {
   if (!authenticated) {
     const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID || ''
     const redirectUri = `${window.location.origin}/api/callback`
-    const scope = 'user-library-read'
+    const scope = 'user-library-read user-read-private user-read-email user-read-playback-state user-modify-playback-state streaming user-read-recently-played user-read-playback-position user-top-read playlist-read-private playlist-read-collaborative'
     const params = new URLSearchParams({ response_type: 'code', client_id: clientId, redirect_uri: redirectUri, scope })
     const authorizeUrl = `https://accounts.spotify.com/authorize?${params.toString()}`
 
