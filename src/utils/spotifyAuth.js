@@ -48,6 +48,8 @@ export async function logout() {
     console.error('Logout request failed', err)
   }
   clearTokens()
+  // Clear ALL localStorage to prevent cached data
+  localStorage.clear()
   // reload so UI resets
   if (typeof window !== 'undefined') window.location.href = window.location.origin
 }
