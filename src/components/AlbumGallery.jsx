@@ -42,12 +42,28 @@ export default function AlbumGallery() {
   const [density, setDensity] = useState(16)
   const [currentPage, setCurrentPage] = useState('home') // 'home' or 'library'
   const [viewMode, setViewMode] = useState('collage') // 'grid' or 'collage' - default to collage
-  const [gridSize, setGridSize] = useState(4) // 3, 4, 5, 6, etc.
+  
+  // Auto-calculate best grid size based on album count
+  const autoGridSize = useMemo(() => {
+    const count = albums.length
+    if (count <= 9) return 3
+    if (count <= 16) return 4
+    if (count <= 25) return 5
+    if (count <= 36) return 6
+    return Math.min(Math.ceil(Math.sqrt(count)), 10)
+  }, [albums.length])
+  
+  const [gridSize, setGridSize] = useState(autoGridSize)
   const [cdCount, setCdCount] = useState(12) // Number of CDs to display in collage
   const [backgroundColor, setBackgroundColor] = useState('#0a0a0a') // Grid background color
   const [previewImage, setPreviewImage] = useState(null) // Preview before download
   const [selectedAlbum, setSelectedAlbum] = useState(null) // For track list modal
   const collageRef = useRef(null)
+  
+  // Update grid size when albums change
+  useEffect(() => {
+    setGridSize(autoGridSize)
+  }, [autoGridSize])
   
   // Calculate optimal grid dimensions based on available albums
   const gridDimensions = useMemo(() => calculateGridDimensions(albums.length), [albums.length])
@@ -57,15 +73,16 @@ export default function AlbumGallery() {
 
   // helper to create a grid PNG and trigger download
   async function downloadGrid(selection = [], size = gridSize) {
+    const albumCount = selection.length
     const cols = size
-    const rows = size
+    const rows = Math.ceil(albumCount / cols) // Only as many rows as needed
     
     // Calculate optimal cell size for quality
     const cellSize = size <= 4 ? 600 : size <= 6 ? 450 : 350
     const padding = 60
     const gap = 20
     
-    // Calculate canvas size to fit content exactly
+    // Calculate canvas size to fit content exactly (rectangular, not square)
     const imageWidth = (padding * 2) + (cellSize * cols) + (gap * (cols - 1))
     const imageHeight = (padding * 2) + (cellSize * rows) + (gap * (rows - 1))
     const cell = cellSize
@@ -86,7 +103,7 @@ export default function AlbumGallery() {
     ctx.fillStyle = backgroundColor
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-    for (let i=0;i<cols*rows;i++){
+    for (let i = 0; i < albumCount; i++){
       const imgUrl = selection[i]?.images?.[0]?.url
       if (!imgUrl) continue
       try{
@@ -155,18 +172,22 @@ export default function AlbumGallery() {
   // Helper to create CD collage download
   async function downloadCDCollage(selection = [], count = cdCount) {
     const maxCDs = Math.min(count, selection.length)
-    const cols = Math.ceil(Math.sqrt(maxCDs))
-    const rows = Math.ceil(maxCDs / cols)
     
-    // Bigger CDs with less overlap
-    const cdSize = 400
-    const overlapFactor = 0.65 // More overlap for tighter layout
-    const padding = 80
+    // Match display: flexible wrapping layout
+    const cdSize = 320
+    const margin = -30 // Negative margin for overlap (matches CSS margin: -20px scaled up)
+    const padding = 60
+    const containerWidth = 1600 // Max width before wrapping
     
-    // Calculate canvas size based on content
-    const totalWidth = cols * cdSize * overlapFactor + cdSize * (1 - overlapFactor) + padding * 2
-    const totalHeight = rows * cdSize * overlapFactor + cdSize * (1 - overlapFactor) + padding * 2
-    const canvasSize = Math.max(totalWidth, totalHeight)
+    // Calculate how many CDs fit per row
+    const effectiveCdWidth = cdSize + margin
+    const maxPerRow = Math.floor((containerWidth - padding * 2) / effectiveCdWidth)
+    const cdsPerRow = Math.min(maxPerRow, maxCDs)
+    const rows = Math.ceil(maxCDs / cdsPerRow)
+    
+    // Calculate actual canvas size
+    const canvasWidth = padding * 2 + (cdsPerRow * effectiveCdWidth) + cdSize - effectiveCdWidth
+    const canvasHeight = padding * 2 + (rows * effectiveCdWidth) + cdSize - effectiveCdWidth
     
     const loadImage = (src) => new Promise((res, rej) => {
       const img = new Image()
@@ -177,24 +198,21 @@ export default function AlbumGallery() {
     })
 
     const canvas = document.createElement('canvas')
-    canvas.width = canvasSize
-    canvas.height = canvasSize
+    canvas.width = canvasWidth
+    canvas.height = canvasHeight
     const ctx = canvas.getContext('2d')
     
     // Background
     ctx.fillStyle = backgroundColor
-    ctx.fillRect(0, 0, canvasSize, canvasSize)
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight)
 
-    // Arrange CDs in overlapping grid pattern
+    // Arrange CDs in wrapping pattern (like flexbox)
     const positions = []
-    const startX = (canvasSize - totalWidth + padding * 2) / 2
-    const startY = (canvasSize - totalHeight + padding * 2) / 2
-    
     for (let i = 0; i < maxCDs; i++) {
-      const col = i % cols
-      const row = Math.floor(i / cols)
-      const x = startX + padding + col * (cdSize * overlapFactor)
-      const y = startY + padding + row * (cdSize * overlapFactor)
+      const col = i % cdsPerRow
+      const row = Math.floor(i / cdsPerRow)
+      const x = padding + col * effectiveCdWidth
+      const y = padding + row * effectiveCdWidth
       
       positions.push({ x, y })
     }
