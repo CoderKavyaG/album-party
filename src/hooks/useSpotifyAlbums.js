@@ -9,13 +9,17 @@ export default function useSpotifyAlbums() {
   const [authenticated, setAuthenticated] = useState(false)
 
   useEffect(() => {
-    // Ask the serverless refresh endpoint for an access token (it uses an HttpOnly cookie)
-    async function init() {
+    const controller = new AbortController()
+    
+    async function initAndFetch() {
       setLoading(true)
+      
+      // Step 1: Get access token from server
       try {
-        // ensure cookies are sent so the server can read the HttpOnly refresh token
+        console.log('Fetching access token...')
         const r = await fetch('/api/refresh', { credentials: 'include' })
         if (!r.ok) {
+          console.log('Refresh failed, not authenticated')
           setAuthenticated(false)
           setLoading(false)
           return
@@ -23,34 +27,31 @@ export default function useSpotifyAlbums() {
         const j = await r.json()
         const token = j.access_token
         if (!token) {
+          console.log('No token received')
           setAuthenticated(false)
           setLoading(false)
           return
         }
-        // store in localStorage for API calls; access token is short-lived
+        // store in localStorage for API calls
         localStorage.setItem('spotify_access_token', token)
         localStorage.setItem('spotify_expires_at', String(Date.now() + (j.expires_in || 3600) * 1000))
         setAuthenticated(true)
-        setLoading(false)
+        console.log('Token received, fetching albums...')
+        
+        // Step 2: Now fetch albums with the token
+        await fetchAlbums(token, controller)
       } catch (err) {
-        console.error('Init refresh failed', err)
+        console.error('Init failed', err)
         setAuthenticated(false)
         setLoading(false)
       }
     }
 
-    init()
-
-    const controller = new AbortController()
-
-    async function fetchAlbums() {
-      setLoading(true)
+    async function fetchAlbums(token, controller) {
       setError(null)
       try {
-        // Read the current access token (may have been set by init() above)
-        const token = getAccessToken() || localStorage.getItem('spotify_access_token')
         if (!token) {
-          // No token available — user needs to sign in
+          console.log('No token provided to fetchAlbums')
           setAuthenticated(false)
           setLoading(false)
           return
@@ -97,10 +98,13 @@ export default function useSpotifyAlbums() {
           if (!res.ok) throw new Error(`Spotify API error ${res.status}`)
           
           const json = await res.json()
-          allAlbums = allAlbums.concat(json.items.map((it) => it.album))
+          const newAlbums = json.items.map((it) => it.album)
+          allAlbums = allAlbums.concat(newAlbums)
+          console.log(`Fetched ${newAlbums.length} albums, total: ${allAlbums.length}`)
           nextUrl = json.next // Will be null when no more pages
         }
         
+        console.log(`Total albums fetched: ${allAlbums.length}`)
         setAlbums(allAlbums)
         
         // Fetch user profile
@@ -130,7 +134,7 @@ export default function useSpotifyAlbums() {
       }
     }
 
-    fetchAlbums()
+    initAndFetch()
 
     return () => controller.abort()
   }, [])
