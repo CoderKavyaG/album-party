@@ -57,6 +57,16 @@ export default async function handler(req, res) {
     // Get fresh access token
     const accessToken = await getAccessTokenFromRefresh(refreshToken)
 
+    // Fetch user profile
+    const userResponse = await fetch('https://api.spotify.com/v1/me', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    
+    let userData = null
+    if (userResponse.ok) {
+      userData = await userResponse.json()
+    }
+
     // Fetch all albums from Spotify
     let allAlbums = []
     let nextUrl = 'https://api.spotify.com/v1/me/albums?limit=50'
@@ -88,7 +98,7 @@ export default async function handler(req, res) {
       nextUrl = data.next
     }
 
-    res.status(200).json({ albums: allAlbums })
+    res.status(200).json({ albums: allAlbums, user: userData })
   } catch (error) {
     console.error('Background refresh error:', error)
     res.status(500).json({ error: 'Failed to fetch albums', details: error.message })

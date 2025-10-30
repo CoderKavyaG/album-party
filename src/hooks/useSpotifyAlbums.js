@@ -7,22 +7,6 @@ export default function useSpotifyAlbums() {
   const [error, setError] = useState(null);
   const [authenticated, setAuthenticated] = useState(false);
 
-  const fetchUserProfile = async (token) => {
-    try {
-      const res = await fetch('https://api.spotify.com/v1/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (res.ok) {
-        return await res.json();
-      }
-      return null;
-    } catch (err) {
-      console.error('Error fetching user profile:', err);
-      return null;
-    }
-  };
-
   useEffect(() => {
     const controller = new AbortController();
     let isMounted = true;
@@ -60,14 +44,11 @@ export default function useSpotifyAlbums() {
         localStorage.setItem('spotify_access_token', token);
         localStorage.setItem('spotify_expires_at', String(Date.now() + (expires_in * 1000)));
         
-        // Fetch user profile and albums in parallel
-        const [userData, albumsRes] = await Promise.all([
-          fetchUserProfile(token),
-          fetch('/api/background-refresh', {
-            credentials: 'include',
-            signal: controller.signal,
-          })
-        ]);
+        // Fetch albums and user data from server
+        const albumsRes = await fetch('/api/background-refresh', {
+          credentials: 'include',
+          signal: controller.signal,
+        });
         
         // If albums fetch fails with 401, user needs to re-authenticate
         if (albumsRes.status === 401) {
@@ -85,11 +66,11 @@ export default function useSpotifyAlbums() {
           throw new Error('Failed to load albums');
         }
         
-        const { albums: fetchedAlbums } = await albumsRes.json();
+        const { albums: fetchedAlbums, user: userData } = await albumsRes.json();
         
         if (isMounted) {
           setAlbums(fetchedAlbums || []);
-          setUser(userData);
+          setUser(userData || null);
           setAuthenticated(true);
           setError(null);
         }
