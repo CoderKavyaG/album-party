@@ -572,21 +572,61 @@ export default function AlbumGallery() {
     )
   }
 
-  if (loading) return <div className="p-6 text-center">Loading albums…</div>
-  if (error) return <div className="p-6 text-red-600">Error: {error}</div>
-  if (!albums.length) return (
-    <div className="empty-state">
-      <h2>No Saved Albums Found</h2>
-      <p>Save some albums in your Spotify library to get started!</p>
-      <div style={{display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem'}}>
-        <button onClick={() => window.location.reload()} className="btn btn-primary">
-          Refresh
-        </button>
-        <a href="https://open.spotify.com" target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
-          Open Spotify
-        </a>
+  if (loading) return (
+    <>
+      <nav className="navbar">
+        <div className="brand-name">Album Party</div>
+      </nav>
+      <div className="p-6 text-center" style={{marginTop: '100px', fontSize: '1.2rem', color: 'var(--text-primary)'}}>
+        Loading your albums...
       </div>
-    </div>
+    </>
+  )
+  
+  if (error) return (
+    <>
+      <nav className="navbar">
+        <div className="brand-name">Album Party</div>
+        <div className="nav-links">
+          <button onClick={logout} className="btn btn-secondary">Sign Out</button>
+        </div>
+      </nav>
+      <div className="p-6 text-center" style={{marginTop: '100px', color: '#ef4444'}}>
+        <h2>Error: {error}</h2>
+        <button onClick={() => window.location.reload()} className="btn btn-primary" style={{marginTop: '1rem'}}>
+          Try Again
+        </button>
+      </div>
+    </>
+  )
+  
+  // Auto-refresh once if no albums found (might be cache issue)
+  const [hasAutoRefreshed, setHasAutoRefreshed] = useState(false)
+  
+  useEffect(() => {
+    if (!loading && !albums.length && !hasAutoRefreshed && authenticated) {
+      console.log('No albums found, auto-refreshing once...')
+      setHasAutoRefreshed(true)
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    }
+  }, [loading, albums.length, hasAutoRefreshed, authenticated])
+  
+  if (!albums.length && !loading) return (
+    <>
+      <nav className="navbar">
+        <div className="brand-name">Album Party</div>
+        <div className="nav-links">
+          <button onClick={logout} className="btn btn-secondary">Sign Out</button>
+        </div>
+      </nav>
+      <div className="empty-state">
+        <div className="spinner"></div>
+        <h2>Refreshing your library...</h2>
+        <p>Please wait while we fetch your albums</p>
+      </div>
+    </>
   )
 
   const { rows, cols, count } = gridDimensions
