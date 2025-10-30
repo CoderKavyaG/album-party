@@ -449,8 +449,7 @@ export default function AlbumGallery() {
   if (!authenticated) {
     const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID || ''
     const redirectUri = `${window.location.origin}/api/callback`
-    // Only request the scopes we absolutely need
-    const scope = 'user-library-read user-read-private user-read-email'
+    const scope = 'user-library-read'
     const params = new URLSearchParams({ response_type: 'code', client_id: clientId, redirect_uri: redirectUri, scope })
     const authorizeUrl = `https://accounts.spotify.com/authorize?${params.toString()}`
 
