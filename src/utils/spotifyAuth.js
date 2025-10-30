@@ -50,6 +50,9 @@ export async function logout() {
   clearTokens()
   // Clear ALL localStorage to prevent cached data
   localStorage.clear()
-  // reload so UI resets
-  if (typeof window !== 'undefined') window.location.href = window.location.origin
+  // Force reload to show login screen
+  if (typeof window !== 'undefined') {
+    window.location.href = window.location.origin
+    window.location.reload(true)
+  }
 }

@@ -41,7 +41,7 @@ export default function AlbumGallery() {
   const [seed, setSeed] = useState(0)
   const [density, setDensity] = useState(16)
   const [currentPage, setCurrentPage] = useState('home') // 'home' or 'library'
-  const [viewMode, setViewMode] = useState('collage') // 'grid', 'collage', 'polaroid', 'vinyl', 'magazine'
+  const [viewMode, setViewMode] = useState('collage') // 'grid', 'collage', 'polaroid', 'magazine'
   
   // Auto-calculate best grid size based on album count
   const autoGridSize = useMemo(() => {
@@ -55,6 +55,7 @@ export default function AlbumGallery() {
   
   const [gridSize, setGridSize] = useState(autoGridSize)
   const [cdCount, setCdCount] = useState(12) // Number of CDs to display in collage
+  const [polaroidCount, setPolaroidCount] = useState(1) // Number of polaroids (1-12)
   const [backgroundColor, setBackgroundColor] = useState('#0a0a0a') // Grid background color
   const [previewImage, setPreviewImage] = useState(null) // Preview before download
   const [selectedAlbum, setSelectedAlbum] = useState(null) // For track list modal
@@ -492,12 +493,6 @@ export default function AlbumGallery() {
                 Polaroid
               </button>
               <button 
-                onClick={() => setViewMode('vinyl')} 
-                className={`btn ${viewMode === 'vinyl' ? 'btn-active' : 'btn-secondary'}`}
-              >
-                Vinyl Stack
-              </button>
-              <button 
                 onClick={() => setViewMode('magazine')} 
                 className={`btn ${viewMode === 'magazine' ? 'btn-active' : 'btn-secondary'}`}
               >
@@ -520,6 +515,15 @@ export default function AlbumGallery() {
                 <button onClick={() => setCdCount(c => Math.max(6, c - 2))} className="btn btn-secondary">-</button>
                 <span className="muted" style={{padding: '0 0.5rem'}}>{cdCount} CDs</span>
                 <button onClick={() => setCdCount(c => Math.min(30, c + 2))} className="btn btn-secondary">+</button>
+              </div>
+            )}
+
+            {/* Polaroid Count Control */}
+            {viewMode === 'polaroid' && (
+              <div className="control-group">
+                <button onClick={() => setPolaroidCount(c => Math.max(1, c - 1))} className="btn btn-secondary">-</button>
+                <span className="muted" style={{padding: '0 0.5rem'}}>{polaroidCount} {polaroidCount === 1 ? 'Polaroid' : 'Polaroids'}</span>
+                <button onClick={() => setPolaroidCount(c => Math.min(12, c + 1))} className="btn btn-secondary">+</button>
               </div>
             )}
 
@@ -596,8 +600,8 @@ export default function AlbumGallery() {
             
             {viewMode === 'polaroid' && (
               <div className="polaroid-container" style={{background: backgroundColor}}>
-                {albums.slice(0, 12).map((alb, idx) => (
-                  <div key={alb.id} className="polaroid-card" style={{transform: `rotate(${(idx % 3 - 1) * 5}deg)`}}>
+                {albums.slice(0, polaroidCount).map((alb, idx) => (
+                  <div key={alb.id} className="polaroid-card" style={{transform: polaroidCount === 1 ? 'rotate(0deg)' : `rotate(${(idx % 3 - 1) * 5}deg)`}}>
                     <div className="polaroid-image">
                       <img src={alb.images?.[0]?.url} alt={alb.name} />
                     </div>
@@ -607,23 +611,10 @@ export default function AlbumGallery() {
               </div>
             )}
             
-            {viewMode === 'vinyl' && (
-              <div className="vinyl-stack-container" style={{background: backgroundColor}}>
-                {albums.slice(0, 8).map((alb, idx) => (
-                  <div key={alb.id} className="vinyl-record" style={{zIndex: 100 - idx, transform: `translateY(${idx * 15}px) rotate(${idx * 3}deg)`}}>
-                    <div className="vinyl-sleeve">
-                      <img src={alb.images?.[0]?.url} alt={alb.name} />
-                    </div>
-                    <div className="vinyl-disc"></div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
             {viewMode === 'magazine' && (
               <div className="magazine-container" style={{background: backgroundColor}}>
-                {albums.slice(0, 6).map((alb, idx) => (
-                  <div key={alb.id} className={`magazine-item ${idx === 0 ? 'magazine-featured' : ''}`}>
+                {albums.slice(0, 4).map((alb, idx) => (
+                  <div key={alb.id} className="magazine-item">
                     <img src={alb.images?.[0]?.url} alt={alb.name} />
                     <div className="magazine-overlay">
                       <h3>{alb.name}</h3>
