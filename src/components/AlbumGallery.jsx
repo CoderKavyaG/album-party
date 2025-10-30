@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react'
+import React, { useMemo, useState, useRef, useEffect } from 'react'
 import useSpotifyAlbums from '../hooks/useSpotifyAlbums'
 import Collage from './CollageExport'
 import { logout } from '../utils/spotifyAuth'
