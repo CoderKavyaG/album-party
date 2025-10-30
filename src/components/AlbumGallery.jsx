@@ -294,6 +294,169 @@ export default function AlbumGallery() {
     return { data, filename: 'album-party-cd-collage.png' }
   }
 
+  // Helper to create Polaroid download
+  async function downloadPolaroid(selection = [], count = polaroidCount) {
+    const maxPolaroids = Math.min(count, selection.length)
+    const polaroidWidth = 300
+    const polaroidHeight = 360 // Extra space for caption
+    const padding = 60
+    const gap = 40
+    
+    // Calculate layout
+    const cols = Math.min(maxPolaroids, 4)
+    const rows = Math.ceil(maxPolaroids / cols)
+    const canvasWidth = padding * 2 + (polaroidWidth * cols) + (gap * (cols - 1))
+    const canvasHeight = padding * 2 + (polaroidHeight * rows) + (gap * (rows - 1))
+    
+    const loadImage = (src) => new Promise((res, rej) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => res(img)
+      img.onerror = rej
+      img.src = src
+    })
+
+    const canvas = document.createElement('canvas')
+    canvas.width = canvasWidth
+    canvas.height = canvasHeight
+    const ctx = canvas.getContext('2d')
+    
+    ctx.fillStyle = backgroundColor
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+
+    for (let i = 0; i < maxPolaroids; i++) {
+      const imgUrl = selection[i]?.images?.[0]?.url
+      if (!imgUrl) continue
+      
+      try {
+        const img = await loadImage(imgUrl)
+        const col = i % cols
+        const row = Math.floor(i / cols)
+        const x = padding + col * (polaroidWidth + gap)
+        const y = padding + row * (polaroidHeight + gap)
+        
+        // White polaroid frame
+        ctx.fillStyle = 'white'
+        ctx.fillRect(x, y, polaroidWidth, polaroidHeight)
+        
+        // Album image
+        const imageSize = 270
+        const imagePadding = 15
+        ctx.save()
+        ctx.drawImage(img, x + imagePadding, y + imagePadding, imageSize, imageSize)
+        ctx.restore()
+        
+        // Caption
+        ctx.fillStyle = '#333'
+        ctx.font = '16px "Courier New", monospace'
+        ctx.textAlign = 'center'
+        ctx.fillText(selection[i].name.substring(0, 25), x + polaroidWidth / 2, y + 320, imageSize)
+      } catch (e) {
+        console.warn('Polaroid image load failed', e)
+      }
+    }
+
+    // Watermark
+    if (user?.display_name) {
+      ctx.font = '600 24px Inter, sans-serif'
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
+      ctx.textAlign = 'right'
+      ctx.textBaseline = 'bottom'
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
+      ctx.shadowBlur = 10
+      ctx.fillText(`@${user.display_name}`, canvasWidth - 30, canvasHeight - 30)
+    }
+
+    const data = canvas.toDataURL('image/png')
+    return { data, filename: 'album-party-polaroid.png' }
+  }
+
+  // Helper to create Magazine download
+  async function downloadMagazine(selection = []) {
+    const maxAlbums = Math.min(6, selection.length)
+    const cellSize = 200
+    const gap = 16
+    const padding = 60
+    
+    // 4 columns x 3 rows grid
+    const canvasWidth = padding * 2 + (cellSize * 4) + (gap * 3)
+    const canvasHeight = padding * 2 + (cellSize * 3) + (gap * 2)
+    
+    const loadImage = (src) => new Promise((res, rej) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => res(img)
+      img.onerror = rej
+      img.src = src
+    })
+
+    const canvas = document.createElement('canvas')
+    canvas.width = canvasWidth
+    canvas.height = canvasHeight
+    const ctx = canvas.getContext('2d')
+    
+    ctx.fillStyle = backgroundColor
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+
+    // Define grid positions matching CSS layout
+    const positions = [
+      { col: 0, row: 0, colSpan: 2, rowSpan: 2 }, // Large
+      { col: 2, row: 0, colSpan: 1, rowSpan: 1 }, // Small
+      { col: 3, row: 0, colSpan: 1, rowSpan: 2 }, // Tall
+      { col: 2, row: 1, colSpan: 2, rowSpan: 1 }, // Wide
+      { col: 0, row: 2, colSpan: 1, rowSpan: 1 }, // Small
+      { col: 1, row: 2, colSpan: 1, rowSpan: 1 }  // Small
+    ]
+
+    for (let i = 0; i < maxAlbums; i++) {
+      const imgUrl = selection[i]?.images?.[0]?.url
+      if (!imgUrl) continue
+      
+      try {
+        const img = await loadImage(imgUrl)
+        const pos = positions[i]
+        const x = padding + pos.col * (cellSize + gap)
+        const y = padding + pos.row * (cellSize + gap)
+        const w = (cellSize * pos.colSpan) + (gap * (pos.colSpan - 1))
+        const h = (cellSize * pos.rowSpan) + (gap * (pos.rowSpan - 1))
+        
+        // Rounded corners
+        ctx.save()
+        ctx.beginPath()
+        const radius = 12
+        ctx.moveTo(x + radius, y)
+        ctx.lineTo(x + w - radius, y)
+        ctx.quadraticCurveTo(x + w, y, x + w, y + radius)
+        ctx.lineTo(x + w, y + h - radius)
+        ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h)
+        ctx.lineTo(x + radius, y + h)
+        ctx.quadraticCurveTo(x, y + h, x, y + h - radius)
+        ctx.lineTo(x, y + radius)
+        ctx.quadraticCurveTo(x, y, x + radius, y)
+        ctx.closePath()
+        ctx.clip()
+        ctx.drawImage(img, x, y, w, h)
+        ctx.restore()
+      } catch (e) {
+        console.warn('Magazine image load failed', e)
+      }
+    }
+
+    // Watermark
+    if (user?.display_name) {
+      ctx.font = '600 28px Inter, sans-serif'
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
+      ctx.textAlign = 'right'
+      ctx.textBaseline = 'bottom'
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
+      ctx.shadowBlur = 10
+      ctx.fillText(`@${user.display_name}`, canvasWidth - 30, canvasHeight - 30)
+    }
+
+    const data = canvas.toDataURL('image/png')
+    return { data, filename: 'album-party-magazine.png' }
+  }
+
   if (!authenticated) {
     const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID || ''
     const redirectUri = `${window.location.origin}/api/callback`
@@ -559,10 +722,18 @@ export default function AlbumGallery() {
                     const albumsToUse = albums.slice(0, gridSize * gridSize)
                     console.log('Generating grid with', albumsToUse.length, 'albums')
                     result = await downloadGrid(albumsToUse, gridSize)
-                  } else {
+                  } else if (viewMode === 'collage') {
                     const albumsToUse = albums.slice(0, Math.min(cdCount, albums.length))
                     console.log('Generating CD collage with', albumsToUse.length, 'albums')
                     result = await downloadCDCollage(albumsToUse, cdCount)
+                  } else if (viewMode === 'polaroid') {
+                    const albumsToUse = albums.slice(0, polaroidCount)
+                    console.log('Generating polaroid with', albumsToUse.length, 'albums')
+                    result = await downloadPolaroid(albumsToUse, polaroidCount)
+                  } else if (viewMode === 'magazine') {
+                    const albumsToUse = albums.slice(0, 6)
+                    console.log('Generating magazine with', albumsToUse.length, 'albums')
+                    result = await downloadMagazine(albumsToUse)
                   }
                   console.log('Result:', result ? 'Success' : 'Failed')
                   if (result) {
@@ -613,7 +784,7 @@ export default function AlbumGallery() {
             
             {viewMode === 'magazine' && (
               <div className="magazine-container" style={{background: backgroundColor}}>
-                {albums.slice(0, 4).map((alb, idx) => (
+                {albums.slice(0, 6).map((alb, idx) => (
                   <div key={alb.id} className="magazine-item">
                     <img src={alb.images?.[0]?.url} alt={alb.name} />
                     <div className="magazine-overlay">
