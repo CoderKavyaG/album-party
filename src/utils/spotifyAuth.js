@@ -42,23 +42,20 @@ export function clearTokens() {
 
 export async function logout() {
   try {
-    // call server to clear HttpOnly refresh cookie
-    await fetch('/api/logout', { credentials: 'include' })
+    // Call server to clear HttpOnly refresh cookie
+    await fetch('/api/logout', { 
+      method: 'POST',
+      credentials: 'include' 
+    })
   } catch (err) {
     console.error('Logout request failed', err)
   }
   
-  // Clear ALL storage
+  // Clear local storage tokens
   clearTokens()
-  localStorage.clear()
-  sessionStorage.clear()
   
-  // Clear all cookies client-side too
-  document.cookie.split(";").forEach((c) => {
-    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
-  })
-  
-  // Single redirect to home (no double reload)
+  // Redirect to home page - this will trigger a fresh page load
+  // and the useSpotifyAlbums hook will detect no auth and show login
   if (typeof window !== 'undefined') {
     window.location.href = window.location.origin
   }

@@ -17,17 +17,28 @@ function serializeCookie(name, val, opts = {}) {
 
 export default async function handler(req, res) {
   try {
-    const { code, error } = req.query || {}
+    const { code, error, state } = req.query || {}
+    
+    // Handle Spotify auth errors
     if (error) {
-      return res.status(400).send(`Auth error: ${error}`)
+      console.error('Spotify auth error:', error)
+      const frontend = process.env.FRONTEND_URI || '/'
+      return res.writeHead(302, { 
+        Location: `${frontend}?error=${encodeURIComponent(error)}` 
+      }).end()
     }
-    if (!code) return res.status(400).send('Missing code')
+    
+    if (!code) {
+      return res.status(400).send('Missing authorization code')
+    }
 
     const clientId = process.env.SPOTIFY_CLIENT_ID
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
     const redirectUri = process.env.SPOTIFY_REDIRECT_URI
+    
     if (!clientId || !clientSecret || !redirectUri) {
-      return res.status(500).send('Server not configured')
+      console.error('Missing environment variables')
+      return res.status(500).send('Server not configured properly. Check environment variables.')
     }
 
     const body = new URLSearchParams({
@@ -35,7 +46,6 @@ export default async function handler(req, res) {
       code,
       redirect_uri: redirectUri,
       client_id: clientId,
-      // client_secret is sent in Authorization header
     })
 
     const tokenResp = await fetch(TOKEN_URL, {
@@ -48,32 +58,44 @@ export default async function handler(req, res) {
     })
 
     const data = await tokenResp.json()
+    
     if (!tokenResp.ok) {
-      console.error('Token error', data)
-      return res.status(500).json({ error: 'Token exchange failed', details: data })
+      console.error('Token exchange failed:', data)
+      const frontend = process.env.FRONTEND_URI || '/'
+      return res.writeHead(302, { 
+        Location: `${frontend}?error=token_exchange_failed` 
+      }).end()
     }
 
     const refreshToken = data.refresh_token
-    const accessToken = data.access_token
-    const expiresIn = data.expires_in || 3600
+    
+    if (!refreshToken) {
+      console.error('No refresh token received from Spotify')
+      const frontend = process.env.FRONTEND_URI || '/'
+      return res.writeHead(302, { 
+        Location: `${frontend}?error=no_refresh_token` 
+      }).end()
+    }
 
-    // Set refresh token as HttpOnly cookie. Expires ~30 days.
-    // Use Secure cookies in production/when behind https; allow local http during development.
+    // Set refresh token as HttpOnly cookie (expires in 30 days)
     const isSecure = (req && ((req.headers && req.headers['x-forwarded-proto'] === 'https') || process.env.NODE_ENV === 'production'))
     const cookie = serializeCookie('spotify_refresh_token', refreshToken, {
       httpOnly: true,
       secure: isSecure,
       path: '/',
       sameSite: 'Lax',
-      maxAge: 60 * 60 * 24 * 30,
+      maxAge: 60 * 60 * 24 * 30, // 30 days
     })
     res.setHeader('Set-Cookie', cookie)
 
-    // Redirect back to frontend root — frontend can call /api/refresh to get an access token
+    // Redirect back to frontend - the app will automatically fetch albums
     const frontend = process.env.FRONTEND_URI || '/'
     return res.writeHead(302, { Location: frontend }).end()
   } catch (err) {
-    console.error(err)
-    res.status(500).send('Server error')
+    console.error('Callback error:', err)
+    const frontend = process.env.FRONTEND_URI || '/'
+    return res.writeHead(302, { 
+      Location: `${frontend}?error=server_error` 
+    }).end()
   }
 }

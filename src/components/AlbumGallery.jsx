@@ -453,6 +453,10 @@ export default function AlbumGallery() {
     const params = new URLSearchParams({ response_type: 'code', client_id: clientId, redirect_uri: redirectUri, scope })
     const authorizeUrl = `https://accounts.spotify.com/authorize?${params.toString()}`
 
+    // Check for error in URL params
+    const urlParams = new URLSearchParams(window.location.search)
+    const authError = urlParams.get('error')
+
     return (
       <>
         <nav className="navbar">
@@ -468,6 +472,19 @@ export default function AlbumGallery() {
           </div>
           
           <div className="landing-content">
+            {authError && (
+              <div style={{
+                background: '#ef4444',
+                color: 'white',
+                padding: '1rem',
+                borderRadius: '8px',
+                marginBottom: '1.5rem',
+                textAlign: 'center'
+              }}>
+                Authentication error: {authError.replace(/_/g, ' ')}. Please try again.
+              </div>
+            )}
+            
             <h1 className="main-heading">
               Find Your <span className="highlight">Playlist</span>
             </h1>

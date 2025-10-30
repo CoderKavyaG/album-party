@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { getAccessToken, clearTokens } from '../utils/spotifyAuth';
 
 export default function useSpotifyAlbums() {
   const [albums, setAlbums] = useState([]);
@@ -32,11 +31,20 @@ export default function useSpotifyAlbums() {
       try {
         setLoading(true);
         
-        // Get access token from server
+        // Try to get access token from server (checks for refresh token cookie)
         const tokenRes = await fetch('/api/refresh', {
           credentials: 'include',
           signal: controller.signal,
         });
+        
+        // If no refresh token cookie exists, user needs to login
+        if (tokenRes.status === 401) {
+          if (isMounted) {
+            setAuthenticated(false);
+            setLoading(false);
+          }
+          return;
+        }
         
         if (!tokenRes.ok) {
           throw new Error('Failed to authenticate with Spotify');
@@ -48,7 +56,7 @@ export default function useSpotifyAlbums() {
           throw new Error('No access token received');
         }
         
-        // Store token in localStorage for API calls
+        // Store token in localStorage for potential future use
         localStorage.setItem('spotify_access_token', token);
         localStorage.setItem('spotify_expires_at', String(Date.now() + (expires_in * 1000)));
         
@@ -60,6 +68,18 @@ export default function useSpotifyAlbums() {
             signal: controller.signal,
           })
         ]);
+        
+        // If albums fetch fails with 401, user needs to re-authenticate
+        if (albumsRes.status === 401) {
+          if (isMounted) {
+            setAuthenticated(false);
+            setLoading(false);
+            // Clear any stale tokens
+            localStorage.removeItem('spotify_access_token');
+            localStorage.removeItem('spotify_expires_at');
+          }
+          return;
+        }
         
         if (!albumsRes.ok) {
           throw new Error('Failed to load albums');

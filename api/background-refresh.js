@@ -1,86 +1,86 @@
-import { getAccessToken } from '../../utils/spotifyAuth';
+// Vercel serverless function: fetches user's saved albums from Spotify
+// Uses refresh token from cookie to get access token, then fetches albums
 
-// In-memory cache for albums
-let cachedAlbums = [];
-let lastRefresh = 0;
-const REFRESH_INTERVAL = 30 * 1000; // 30 seconds
+const TOKEN_URL = 'https://accounts.spotify.com/api/token'
+
+function parseCookies(cookieHeader) {
+  if (!cookieHeader) return {}
+  return cookieHeader.split(';').map(c => c.trim()).reduce((acc, pair) => {
+    const [k, v] = pair.split('=')
+    acc[k] = decodeURIComponent(v)
+    return acc
+  }, {})
+}
+
+async function getAccessTokenFromRefresh(refreshToken) {
+  const clientId = process.env.SPOTIFY_CLIENT_ID
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
+  if (!clientId || !clientSecret) throw new Error('Server not configured')
+
+  const body = new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+  })
+
+  const tokenResp = await fetch(TOKEN_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
+    },
+    body: body.toString(),
+  })
+
+  const data = await tokenResp.json()
+  if (!tokenResp.ok) {
+    throw new Error('Token refresh failed')
+  }
+
+  return data.access_token
+}
 
 export default async function handler(req, res) {
   // Only allow GET requests
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
-    const now = Date.now();
-    const timeSinceLastRefresh = now - lastRefresh;
-
-    // If we have fresh data (less than 30 seconds old), return it
-    if (cachedAlbums.length > 0 && timeSinceLastRefresh < REFRESH_INTERVAL) {
-      return res.status(200).json({ albums: cachedAlbums });
+    // Get refresh token from cookie
+    const cookies = parseCookies(req.headers.cookie || '')
+    const refreshToken = cookies.spotify_refresh_token
+    
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'Not authenticated' })
     }
 
-    // Otherwise, refresh the data
-    const token = await getAccessToken();
-    if (!token) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
+    // Get fresh access token
+    const accessToken = await getAccessTokenFromRefresh(refreshToken)
 
-    // Fetch albums from Spotify
-    let allAlbums = [];
-    let nextUrl = 'https://api.spotify.com/v1/me/albums?limit=50';
+    // Fetch all albums from Spotify
+    let allAlbums = []
+    let nextUrl = 'https://api.spotify.com/v1/me/albums?limit=50'
     
     while (nextUrl) {
       const response = await fetch(nextUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
 
       if (!response.ok) {
-        throw new Error(`Spotify API error: ${response.status}`);
+        if (response.status === 401) {
+          return res.status(401).json({ error: 'Token expired or invalid' })
+        }
+        throw new Error(`Spotify API error: ${response.status}`)
       }
 
-      const data = await response.json();
-      allAlbums = [...allAlbums, ...data.items.map(item => item.album)];
-      nextUrl = data.next;
+      const data = await response.json()
+      allAlbums = [...allAlbums, ...data.items.map(item => item.album)]
+      nextUrl = data.next
     }
 
-    // Update cache and last refresh time
-    cachedAlbums = allAlbums;
-    lastRefresh = now;
-
-    res.status(200).json({ albums: allAlbums });
+    res.status(200).json({ albums: allAlbums })
   } catch (error) {
-    console.error('Background refresh error:', error);
-    // If we have stale data, return it with a warning
-    if (cachedAlbums.length > 0) {
-      return res.status(200).json({ 
-        albums: cachedAlbums,
-        warning: 'Using cached data due to refresh error'
-      });
-    }
-    res.status(500).json({ error: 'Failed to refresh albums' });
+    console.error('Background refresh error:', error)
+    res.status(500).json({ error: 'Failed to fetch albums', details: error.message })
   }
 }
-
-// Start background refresh interval
-setInterval(async () => {
-  try {
-    const token = await getAccessToken();
-    if (!token) return;
-
-    const response = await fetch('https://api.spotify.com/v1/me/albums?limit=1', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.items?.length > 0) {
-        // Just trigger a refresh to keep the token alive
-        // We don't need to process the data here
-        console.log('Background token refresh successful');
-      }
-    }
-  } catch (error) {
-    console.error('Background refresh interval error:', error);
-  }
-}, REFRESH_INTERVAL);
