@@ -291,7 +291,7 @@ export default function AlbumGallery() {
       ctx.textBaseline = 'bottom'
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
       ctx.shadowBlur = 10
-      ctx.fillText(`@${user.display_name}`, canvasSize - 40, canvasSize - 40)
+      ctx.fillText(`@${user.display_name}`, canvasWidth - 40, canvasHeight - 40)
     }
 
     const data = canvas.toDataURL('image/png')
