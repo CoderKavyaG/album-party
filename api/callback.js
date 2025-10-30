@@ -45,7 +45,6 @@ export default async function handler(req, res) {
       grant_type: 'authorization_code',
       code,
       redirect_uri: redirectUri,
-      client_id: clientId,
     })
 
     const tokenResp = await fetch(TOKEN_URL, {
@@ -67,8 +66,13 @@ export default async function handler(req, res) {
       }).end()
     }
 
-    console.log('Token exchange successful, scope:', data.scope)
     const refreshToken = data.refresh_token
+    const accessToken = data.access_token
+    const scope = data.scope
+    
+    console.log('Token exchange successful')
+    console.log('Scope received:', scope)
+    console.log('Has refresh token:', !!refreshToken)
     
     if (!refreshToken) {
       console.error('No refresh token received from Spotify')
