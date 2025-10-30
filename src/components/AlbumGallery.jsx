@@ -173,21 +173,18 @@ export default function AlbumGallery() {
   async function downloadCDCollage(selection = [], count = cdCount) {
     const maxCDs = Math.min(count, selection.length)
     
-    // Match display: flexible wrapping layout
-    const cdSize = 320
-    const margin = -30 // Negative margin for overlap (matches CSS margin: -20px scaled up)
-    const padding = 60
-    const containerWidth = 1600 // Max width before wrapping
+    // Single horizontal row layout
+    const cdSize = 280
+    const overlap = -40 // Negative for tight overlap
+    const padding = 50
     
-    // Calculate how many CDs fit per row
-    const effectiveCdWidth = cdSize + margin
-    const maxPerRow = Math.floor((containerWidth - padding * 2) / effectiveCdWidth)
-    const cdsPerRow = Math.min(maxPerRow, maxCDs)
-    const rows = Math.ceil(maxCDs / cdsPerRow)
+    // All CDs in one row
+    const effectiveCdWidth = cdSize + overlap
+    const totalCDWidth = (maxCDs * effectiveCdWidth) + cdSize - effectiveCdWidth
     
-    // Calculate actual canvas size
-    const canvasWidth = padding * 2 + (cdsPerRow * effectiveCdWidth) + cdSize - effectiveCdWidth
-    const canvasHeight = padding * 2 + (rows * effectiveCdWidth) + cdSize - effectiveCdWidth
+    // Calculate canvas size - horizontal rectangle
+    const canvasWidth = padding * 2 + totalCDWidth
+    const canvasHeight = padding * 2 + cdSize
     
     const loadImage = (src) => new Promise((res, rej) => {
       const img = new Image()
@@ -206,13 +203,11 @@ export default function AlbumGallery() {
     ctx.fillStyle = backgroundColor
     ctx.fillRect(0, 0, canvasWidth, canvasHeight)
 
-    // Arrange CDs in wrapping pattern (like flexbox)
+    // Arrange CDs in single horizontal row
     const positions = []
     for (let i = 0; i < maxCDs; i++) {
-      const col = i % cdsPerRow
-      const row = Math.floor(i / cdsPerRow)
-      const x = padding + col * effectiveCdWidth
-      const y = padding + row * effectiveCdWidth
+      const x = padding + i * effectiveCdWidth
+      const y = padding
       
       positions.push({ x, y })
     }
