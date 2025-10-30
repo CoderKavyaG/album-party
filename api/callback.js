@@ -83,10 +83,10 @@ export default async function handler(req, res) {
     }
 
     // Set refresh token as HttpOnly cookie (expires in 30 days)
-    const isSecure = (req && ((req.headers && req.headers['x-forwarded-proto'] === 'https') || process.env.NODE_ENV === 'production'))
+    const isProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production'
     const cookie = serializeCookie('spotify_refresh_token', refreshToken, {
       httpOnly: true,
-      secure: isSecure,
+      secure: isProduction,
       path: '/',
       sameSite: 'Lax',
       maxAge: 60 * 60 * 24 * 30, // 30 days
