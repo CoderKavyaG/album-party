@@ -356,17 +356,6 @@ export default function AlbumGallery() {
       }
     }
 
-    // Watermark
-    if (user?.display_name) {
-      ctx.font = '600 24px Inter, sans-serif'
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
-      ctx.textAlign = 'right'
-      ctx.textBaseline = 'bottom'
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
-      ctx.shadowBlur = 10
-      ctx.fillText(`@${user.display_name}`, canvasWidth - 30, canvasHeight - 30)
-    }
-
     const data = canvas.toDataURL('image/png')
     return { data, filename: 'album-party-polaroid.png' }
   }
@@ -374,13 +363,13 @@ export default function AlbumGallery() {
   // Helper to create Magazine download
   async function downloadMagazine(selection = []) {
     const maxAlbums = Math.min(6, selection.length)
-    const cellSize = 200
-    const gap = 16
-    const padding = 60
+    const cellSize = 150
+    const gap = 12
+    const padding = 50
     
-    // 4 columns x 3 rows grid
-    const canvasWidth = padding * 2 + (cellSize * 4) + (gap * 3)
-    const canvasHeight = padding * 2 + (cellSize * 3) + (gap * 2)
+    // 6 columns x 4 rows grid
+    const canvasWidth = padding * 2 + (cellSize * 6) + (gap * 5)
+    const canvasHeight = padding * 2 + (cellSize * 4) + (gap * 3)
     
     const loadImage = (src) => new Promise((res, rej) => {
       const img = new Image()
@@ -398,14 +387,14 @@ export default function AlbumGallery() {
     ctx.fillStyle = backgroundColor
     ctx.fillRect(0, 0, canvasWidth, canvasHeight)
 
-    // Define grid positions matching CSS layout
+    // Define grid positions matching CSS layout (6 columns, 4 rows)
     const positions = [
-      { col: 0, row: 0, colSpan: 2, rowSpan: 2 }, // Large
-      { col: 2, row: 0, colSpan: 1, rowSpan: 1 }, // Small
-      { col: 3, row: 0, colSpan: 1, rowSpan: 2 }, // Tall
-      { col: 2, row: 1, colSpan: 2, rowSpan: 1 }, // Wide
-      { col: 0, row: 2, colSpan: 1, rowSpan: 1 }, // Small
-      { col: 1, row: 2, colSpan: 1, rowSpan: 1 }  // Small
+      { col: 0, row: 0, colSpan: 3, rowSpan: 2 }, // Large square
+      { col: 3, row: 0, colSpan: 3, rowSpan: 1 }, // Wide
+      { col: 3, row: 1, colSpan: 2, rowSpan: 2 }, // Medium
+      { col: 5, row: 1, colSpan: 1, rowSpan: 3 }, // Tall
+      { col: 0, row: 2, colSpan: 2, rowSpan: 2 }, // Medium
+      { col: 2, row: 3, colSpan: 3, rowSpan: 1 }  // Wide
     ]
 
     for (let i = 0; i < maxAlbums; i++) {
